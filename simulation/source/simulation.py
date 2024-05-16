@@ -1,4 +1,6 @@
 import time
+import copy
+import random
 from .agent import Agent
 from .grid import Grid
 
@@ -8,6 +10,7 @@ class Simulation:
         self.next_id = 1
         self.running = False
         self.simulation_step = 0
+        self.actions = {}
 
         # Process the config.
         self.raiseIfConfigInvalid(config)
@@ -53,17 +56,23 @@ class Simulation:
         }
         return renderer_data
 
+
     def add_agent(self):
         agent_id = self.next_id
         self.agents[agent_id] = Agent(agent_id)
         self.next_id += 1
         return agent_id
 
+
     def get_agents(self):
         return list(self.agents.values())
 
+
     def get_agent(self, agent_id):
         return self.agents.get(agent_id)
+
+    def add_action(self, agent_id, action):
+        self.actions[agent_id] = action
 
     def step(self):
 
@@ -80,6 +89,17 @@ class Simulation:
 
     def update(self):
         # TODO: Execute actions. Use randomness.
+        actions_to_execute = copy.deepcopy(self.actions)
+        self.actions = {}
+        print(actions_to_execute)
+
+
+        # Shuffle the agents to randomize the order in which they execute their actions.
+        agent_ids = list(actions_to_execute.keys())
+        random.shuffle(agent_ids)
+        for agent_id in agent_ids:
+            print(f"Agent {agent_id} is executing action {actions_to_execute[agent_id]}")
+            self.perform_agent_action(agent_id, actions_to_execute[agent_id])
 
         # Update the grid.
         self.grid.clear()
@@ -92,11 +112,38 @@ class Simulation:
             # Create the observation.
             agent.observations = self.get_agent_observations(agent.x, agent.y)
 
+    def perform_agent_action(self, agent_id, action):
+        agent = self.agents[agent_id]
+
+        action = action["action"]
+        if action == "up":
+            if agent.y > 0:
+                agent.y -= 1
+        elif action == "down":
+            if agent.y < self.grid.height - 1:
+                agent.y += 1
+        elif action == "left":
+            if agent.x > 0:
+                agent.x -= 1
+        elif action == "right":
+            if agent.x < self.grid.width - 1:
+                agent.x += 1
+        else:
+            raise ValueError(f"Invalid action: {action}")
+
+
     def get_agent_observations(self, agent_x, agent_y):
         # Get all the cells in the grid around it. The agent is in the center. The grid is a square.
         # Use the grid size to determine the size of the grid.
         grid_size = 3
-        observations = []
+        observations = {
+            "me": {
+                "x": agent_x,
+                "y": agent_y,
+            },
+            "step": self.simulation_step,
+            "cells": [],
+        }
         for x in range(agent_x - grid_size // 2, agent_x + grid_size // 2 + 1):
             for y in range(agent_y - grid_size // 2, agent_y + grid_size // 2 + 1):
                 if x < 0 or x >= self.grid.width or y < 0 or y >= self.grid.height:
@@ -104,24 +151,11 @@ class Simulation:
                 entities = self.grid.get_entities_at(x, y)
                 if entities == []:
                     continue
-                observations.append({
+                observations["cells"].append({
                     "x": x,
                     "y": y,
                     "entities": entities,
                 })
-
-        # Add the agent's own position to the observations.
-        observations.append({
-            "me": {
-                "x": agent_x,
-                "y": agent_y,
-            }
-        })
-
-        # Add the current simulation step to the observations.
-        observations.append({
-            "simulation_step": self.simulation_step,
-        })
 
         return observations
 

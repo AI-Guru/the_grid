@@ -60,14 +60,8 @@ def get_agent_observations(agent_id):
 
 @app.route('/api/agents/<int:agent_id>/action', methods=['POST'])
 def agent_action(agent_id):
-    agent = simulation.get_agent(agent_id)
-    if agent is None:
-        abort(404)
-    if not request.json or 'action' not in request.json:
-        abort(400)
-    action = request.json['action']
-    agent.add_action(action)
-    return jsonify({'id': agent.id, 'action': action}), 201
+    simulation.add_action(agent_id, request.json['action'])
+    return jsonify({"status": "cool"}), 201
 
 @app.teardown_appcontext
 def shutdown_simulation(exception=None):
@@ -76,7 +70,8 @@ def shutdown_simulation(exception=None):
 if __name__ == '__main__':
 
     # Run run_simulation in 1 second.
-    threading.Timer(1, run_simulation).start()
+    if not app.debug or (app.debug and os.environ.get('WERKZEUG_RUN_MAIN') == 'true'):
+        threading.Timer(1, run_simulation).start()
 
     app.run(debug=False)
 
