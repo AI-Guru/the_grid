@@ -1,38 +1,32 @@
 import os
 from flask import Flask, request, jsonify, render_template, abort
+from flask_executor import Executor
 import threading
 import time
+import json
 from source.agent import Agent
 from source.simulation import Simulation
+import waitress
 
 app = Flask(__name__)
-app.config['DEBUG'] = True
+executor = Executor(app)
 
-simulation_config = {
-    "grid": {
-        "width": 4,
-        "height": 4
-    },
-    "update_interval_seconds": 1.0,
-    "agents": [
-        {
-            "identifier": 1,
-            "character": "red",
-            "x": 0,
-            "y": 0
-        },
-        {
-            "identifier": 2,
-            "character": "blue",
-            "x": 3,
-            "y": 3
-        }
-    ]
-}
-
+# Load the simulation configuration from a file.
+simulation_path = "simulations/simulation.json"
+if not os.path.exists(simulation_path):
+    raise ValueError(f"Simulation file not found: {simulation_path}")
+with open(simulation_path) as f:
+    simulation_config = json.load(f)
 
 # Create a simulation instance
 simulation = Simulation(simulation_config)
+
+
+def run_simulation():
+    print("Starting simulation thread...")
+
+    simulation.step()
+    threading.Timer(1, run_simulation).start()
 
 
 @app.route('/')
@@ -79,20 +73,13 @@ def agent_action(agent_id):
 def shutdown_simulation(exception=None):
     simulation.stop()
 
-
-def start_simulation_thread():
-    print("Starting simulation thread...")
-    simulation_thread = threading.Thread(target=simulation.run)
-    simulation_thread.daemon = True
-    simulation_thread.start()
-    print("Simulation thread started.")
-
-
 if __name__ == '__main__':
-    print("Starting app and simulation")
-    # Only start the simulation thread if this is the main process
-    if not app.debug or (app.debug and os.environ.get('WERKZEUG_RUN_MAIN') == 'true'):
-        start_simulation_thread()
-    print("Starting app...")
-    app.run()
-    print("App and simulation running")
+
+    # Run run_simulation in 1 second.
+    threading.Timer(1, run_simulation).start()
+
+    app.run(debug=False)
+
+    #threading.Thread(target=run_simulation, daemon=True).start()
+    # Use waitress to serve the app
+    #waitress.serve(app, host='0.0.0.0', port=8080)
