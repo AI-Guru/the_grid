@@ -1,46 +1,59 @@
-import requests
-import time
+import socketio
 import random
+import threading
+
+class Agent:
+
+    def __init__(self, client_id, server_url):
+        self.client_id = client_id
+        self.server_url = server_url
+        self.sio = socketio.Client()
+
+        # Register event handlers
+        self.sio.on('connect', self.on_connect)
+        self.sio.on('disconnect', self.on_disconnect)
+        self.sio.on('message', self.on_message)
+
+    def on_connect(self):
+        print(f"Client {self.client_id} connected to server")
+
+
+    def on_disconnect(self):
+        print(f"Client {self.client_id} disconnected from server")
+
+
+    def on_message(self, data):
+        print(f"{self.client_id}: Received message: {data['data']}")
+        
+        actions = ["up", "down", "left", "right"]
+        random_action = random.choice(actions)
+        print(f"{self.client_id}: Sending response: {random_action}")
+
+        # Process the message
+        response = {"action": random_action}
+        self.sio.emit('response', {'id': self.client_id, 'response': response})
+
+    def start(self):
+        self.sio.connect(self.server_url, headers={'id': self.client_id})
+        self.sio.wait()
+
 
 def run():
-
-    agent_id = "1"
-    base_url = "http://127.0.0.1:5000/api/agents/"
-    observations_url = base_url + f"{agent_id}/observations"
-    actions_url = base_url + f"{agent_id}/action"
-
-    actions = [
-        "up",
-        "down",
-        "left",
-        "right",
-    ]
+    client_ids = ["agent1", "agent2"]
+    server_url = 'http://localhost:5666'
     
-    last_step = -1
-    while True:
-        try:
-            observations = requests.get(observations_url).json()
-            step = observations["observations"]["step"]
-            if step == last_step:
-                time.sleep(0.5)
-                continue
-            
-            print(f"Step: {step}")
-            print(observations)
-            last_step = step
+    # Create an agent for each client. Run each in a separate thread.
+    for client_id in client_ids:
+        thread = threading.Thread(target=run_agent, args=(client_id, server_url))
+        thread.start()
 
-            # Choose a random action and post it.
-            action = {
-                "action": random.choice(actions),
-            }
-            response = requests.post(actions_url, json={"action": action})
-        except Exception as e:
-            print(e)
-            time.sleep(1)
+
+def run_agent(client_id, server_url):
+    print(f"Starting agent {client_id}")
+    agent = Agent(client_id, server_url)
+    agent.start()
 
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     run()
-
-

@@ -113,6 +113,8 @@ class Simulation:
             agent.observations = self.get_agent_observations(agent.x, agent.y)
 
     def perform_agent_action(self, agent_id, action):
+        print(agent_id, action)
+        assert agent_id in self.agents, f"Invalid agent id: {agent_id}, {self.agents.keys()}"
         agent = self.agents[agent_id]
 
         action = action["action"]
