@@ -5,75 +5,76 @@ import os
 import json
 from source.simulation import Simulation
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app)
+class Server:
+    def __init__(self, simulation_config_path, secret_key='secret!'):
+        self.app = Flask(__name__)
+        self.app.config['SECRET_KEY'] = secret_key
+        self.socketio = SocketIO(self.app)
+        self.clients = {}
+        
+        # Load simulation configuration
+        if not os.path.exists(simulation_config_path):
+            raise ValueError(f"Simulation file not found: {simulation_config_path}")
+        with open(simulation_config_path) as f:
+            simulation_config = json.load(f)
+        self.simulation = Simulation(simulation_config)
 
-clients = {}
+        # Register routes and event handlers
+        self.app.route('/')(self.index)
+        self.app.route('/api/renderer/data', methods=['GET'])(self.get_renderer_data)
+        self.socketio.on_event('connect', self.handle_connect)
+        self.socketio.on_event('disconnect', self.handle_disconnect)
+        self.socketio.on_event('response', self.handle_response)
 
-# Load the simulation configuration from a file.
-simulation_path = "simulations/simulation.json"
-if not os.path.exists(simulation_path):
-    raise ValueError(f"Simulation file not found: {simulation_path}")
-with open(simulation_path) as f:
-    simulation_config = json.load(f)
-simulation = Simulation(simulation_config)
+    def index(self):
+        return render_template('index.html')
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+    def get_renderer_data(self):
+        renderer_data = self.simulation.get_renderer_data()
+        return jsonify(renderer_data)
 
-# Get the data for rendering.
-@app.route('/api/renderer/data', methods=['GET'])
-def get_renderer_data():
-    renderer_data = simulation.get_renderer_data()
-    return jsonify(renderer_data)
+    def handle_connect(self):
+        # Get the client id from the request headers.
+        client_id = request.headers.get("id")
+        assert client_id is not None, f"Client ID not provided in arguments {request.args} {request}"
+        self.clients[client_id] = request.sid
+        print(f"Client {client_id} connected")
 
+    def handle_disconnect(self):
+        client_id = None
+        for cid, sid in self.clients.items():
+            if sid == request.sid:
+                client_id = cid
+                break
+        if client_id:
+            del self.clients[client_id]
+            print(f"Client {client_id} disconnected")
 
-@socketio.on('connect')
-def handle_connect():
-    # Get the client id from the request headers.
-    client_id = request.headers.get("id")
+    def handle_response(self, data):
+        print(f"Received response from {data['id']}: {data['response']}")
+        self.simulation.add_action(data['id'], data['response'])
 
-    assert client_id is not None, f"Client ID not provided in arguments {request.args} {request}"
-    clients[client_id] = request.sid
-    print(f"Client {client_id} connected")
+    def main_loop(self):
+        # Let the simulation step
+        self.simulation.step()
 
+        # Send a message to each client
+        print(f"Sending messages to clients {self.clients}")
+        for client_id, sid in self.clients.items():
+            observations = self.simulation.get_agent_observations(client_id)
+            self.socketio.emit("message", {"observations": observations, "id": client_id}, room=sid)
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    client_id = None
-    for cid, sid in clients.items():
-        if sid == request.sid:
-            client_id = cid
-            break
-    if client_id:
-        del clients[client_id]
-        print(f"Client {client_id} disconnected")
+        # Schedule the next loop
+        self.socketio.start_background_task(self.timer_callback)
 
+    def timer_callback(self):
+        self.socketio.sleep(1)
+        self.main_loop()
 
-@socketio.on('response')
-def handle_response(data):
-    print(f"Received response from {data['id']}: {data['response']}")
-    simulation.add_action(data['id'], data['response'])
-
-
-def main_loop():
-    # Let the simulation step.
-    simulation.step()
-
-    # Send a message to each client.
-    print(f"Sending messages to clients {clients}")
-    for client_id, sid in clients.items():
-        socketio.emit('message', {'data': 'Message from server', 'id': client_id}, room=sid)
-    
-    # Schedule the next loop.
-    socketio.start_background_task(timer_callback)
-
-def timer_callback():
-    socketio.sleep(1)
-    main_loop()
+    def run(self, host='0.0.0.0', port=5666):
+        self.socketio.start_background_task(self.main_loop)
+        self.socketio.run(self.app, host=host, port=port)
 
 if __name__ == '__main__':
-    socketio.start_background_task(main_loop)
-    socketio.run(app, host='0.0.0.0', port=5666)
+    server = Server(simulation_config_path="simulations/simulation.json")
+    server.run()

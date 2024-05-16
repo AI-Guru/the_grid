@@ -23,7 +23,7 @@ class Agent:
 
 
     def on_message(self, data):
-        print(f"{self.client_id}: Received message: {data['data']}")
+        print(f"{self.client_id}: Received message: {data['observations']}")
         
         actions = ["up", "down", "left", "right"]
         random_action = random.choice(actions)

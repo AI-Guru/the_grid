@@ -74,6 +74,11 @@ class Simulation:
     def add_action(self, agent_id, action):
         self.actions[agent_id] = action
 
+    def get_agent_observations(self, agent_id):
+        assert agent_id in self.agents, f"Invalid agent id: {agent_id}"
+        agent = self.agents.get(agent_id)
+        return agent.observations
+
     def step(self):
 
         print(f"Simulation step: {self.simulation_step}")
@@ -110,7 +115,7 @@ class Simulation:
         for agent in self.agents.values():
 
             # Create the observation.
-            agent.observations = self.get_agent_observations(agent.x, agent.y)
+            agent.observations = self.compute_agent_observations(agent.x, agent.y)
 
     def perform_agent_action(self, agent_id, action):
         print(agent_id, action)
@@ -134,7 +139,7 @@ class Simulation:
             raise ValueError(f"Invalid action: {action}")
 
 
-    def get_agent_observations(self, agent_x, agent_y):
+    def compute_agent_observations(self, agent_x, agent_y):
         # Get all the cells in the grid around it. The agent is in the center. The grid is a square.
         # Use the grid size to determine the size of the grid.
         grid_size = 3
