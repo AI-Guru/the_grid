@@ -32,14 +32,18 @@ class Simulation:
 
     def get_renderer_data(self):
         grid_cells = []
+
+        grid_width = self.grid.width
+        grid_height = self.grid.height
+        print(grid_width, grid_height)
         
         # Add the grid cells to the renderer data.
-        for x in range(self.grid.width):
-            for y in range(self.grid.height):
+        for x in range(grid_width):
+            for y in range(grid_height):
                 grid_cells.append({
                     "x": x,
                     "y": y,
-                    "sprite": "grass",
+                    "sprite": self.grid.get_celltype_at(x, y)
                 })
 
         # Add the agent cells to the renderer data.
@@ -107,7 +111,7 @@ class Simulation:
             self.perform_agent_action(agent_id, actions_to_execute[agent_id])
 
         # Update the grid.
-        self.grid.clear()
+        self.grid.clear_entities()
         for agent in self.agents.values():
             self.grid.add_entity(agent, agent.x, agent.y)
 
@@ -123,20 +127,37 @@ class Simulation:
         agent = self.agents[agent_id]
 
         action = action["action"]
-        if action == "up":
-            if agent.y > 0:
-                agent.y -= 1
-        elif action == "down":
-            if agent.y < self.grid.height - 1:
-                agent.y += 1
-        elif action == "left":
-            if agent.x > 0:
-                agent.x -= 1
-        elif action == "right":
-            if agent.x < self.grid.width - 1:
-                agent.x += 1
+        action_to_move = {
+            "up": (0, -1),
+            "down": (0, 1),
+            "left": (-1, 0),
+            "right": (1, 0),
+        }
+
+        # Handle movement actions.
+        action_failed_cause = None
+        if action in action_to_move:
+            dx, dy = action_to_move[action]
+            new_x = agent.x + dx
+            new_y = agent.y + dy
+
+            # Check if the new position is valid.
+            if new_x < 0 or new_x >= self.grid.width or new_y < 0 or new_y >= self.grid.height:
+                action_failed_cause = "out_of_bounds"
+
+            # Check if the new position is empty on the grid.
+            if self.grid.get_celltype_at(new_x, new_y) not in ["empty"]:
+                action_failed_cause = "cell_not_empty"
+
+            # Handle failure and success.
+            if action_failed_cause is not None:
+                print(f"Action failed: {action_failed_cause}")
+            else:
+                agent.x = new_x
+                agent.y = new_y
+
         else:
-            raise ValueError(f"Invalid action: {action}")
+            print(f"Invalid action: {action}")
 
 
     def compute_agent_observations(self, agent_x, agent_y):
@@ -155,13 +176,14 @@ class Simulation:
             for y in range(agent_y - grid_size // 2, agent_y + grid_size // 2 + 1):
                 if x < 0 or x >= self.grid.width or y < 0 or y >= self.grid.height:
                     continue
-                entities = self.grid.get_entities_at(x, y)
-                if entities == []:
+                elements = [self.grid.get_celltype_at(x, y)]
+                elements += self.grid.get_entities_at(x, y)
+                if elements == []:
                     continue
                 observations["cells"].append({
                     "x": x,
                     "y": y,
-                    "entities": entities,
+                    "elements": elements,
                 })
 
         return observations

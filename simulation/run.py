@@ -6,6 +6,7 @@ import json
 from source.simulation import Simulation
 
 class Server:
+    
     def __init__(self, simulation_config_path, secret_key='secret!'):
         self.app = Flask(__name__)
         self.app.config['SECRET_KEY'] = secret_key

@@ -1,21 +1,29 @@
 {
     "grid": {
-        "width": 4,
-        "height": 4
+        "layout": [
+            "X X X X X X X X",
+            "X . . . . . . X",
+            "X . . . . X . X",
+            "X . X X X X . X",
+            "X . . X . . . X",
+            "X . . X . . X X",
+            "X . . . . . . X",
+            "X X X X X X X X"
+        ]
     },
     "update_interval_seconds": 1.0,
     "agents": [
         {
             "identifier": "agent1",
             "name": "red",
-            "x": 0,
-            "y": 0
+            "x": 1,
+            "y": 1
         },
         {
             "identifier": "agent2",
             "name": "blue",
-            "x": 3,
-            "y": 3
+            "x": 6,
+            "y": 6
         }
     ]
 }
