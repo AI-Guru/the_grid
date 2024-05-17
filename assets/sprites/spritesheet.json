@@ -1,0 +1,24 @@
+{
+    "sprites": [
+        {
+            "filename": "gold.png",
+            "pos": "0 0"
+        },
+        {
+            "filename": "grass.png",
+            "pos": "1 0"
+        },
+        {
+            "filename": "knight1.png",
+            "pos": "2 0"
+        },
+        {
+            "filename": "knight2.png",
+            "pos": "3 0"
+        },
+        {
+            "filename": "rock.png",
+            "pos": "4 0"
+        }
+    ]
+}

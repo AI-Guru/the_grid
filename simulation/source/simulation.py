@@ -54,9 +54,6 @@ class Simulation:
             self.entities.append(entity)
 
 
-
-
-
     def raiseIfConfigInvalid(self, config):
         if "grid" not in config:
             raise ValueError("Missing 'grid' key in simulation config")
@@ -64,6 +61,7 @@ class Simulation:
             raise ValueError("Invalid 'update_interval_seconds' value in simulation config")
         if "agents" in config and not isinstance(config["agents"], list):
             raise ValueError("Invalid 'agents' value in simulation config")
+
 
     def get_renderer_data(self):
         grid_cells = []

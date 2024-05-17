@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_socketio import SocketIO, emit
 import threading
 import os
@@ -22,6 +22,7 @@ class Server:
 
         # Register routes and event handlers
         self.app.route('/')(self.index)
+        self.app.route('/static/<path:filename>', methods=['GET'])(self.serve_static_file)
         self.app.route('/api/renderer/data', methods=['GET'])(self.get_renderer_data)
         self.socketio.on_event('connect', self.handle_connect)
         self.socketio.on_event('disconnect', self.handle_disconnect)
@@ -34,6 +35,9 @@ class Server:
         renderer_data = self.simulation.get_renderer_data()
         return jsonify(renderer_data)
     
+    def serve_static_file(self, filename):
+        return send_from_directory('static', filename)
+
     def handle_connect(self):
         # Get the client id from the request headers.
         client_id = request.headers.get("id")

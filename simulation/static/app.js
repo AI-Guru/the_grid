@@ -13,9 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const game = new Phaser.Game(config);
     let gridData = [];
+    const spriteSize = 64;
 
     function preload() {
-        // Preload assets if necessary
+        // Preload the sprite sheet
+        this.load.spritesheet('sprites', '/static/spritesheet.png', {
+            frameWidth: spriteSize,
+            frameHeight: spriteSize
+        });
     }
 
     function create() {
@@ -27,19 +32,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // Clear the scene before rendering
         this.children.removeAll();
 
-        // Add a black background.
+        // Add a black background
         this.add.rectangle(0, 0, 800, 600, 0x000000).setOrigin(0);
 
         // Render the grid
         gridData.forEach(cell => {
-            if (cell.sprite === 'empty') color = 0x00ff00;
-            else if (cell.sprite === 'red') color = 0xff0000;
-            else if (cell.sprite === 'blue') color = 0x0000ff;
-            else if (cell.sprite === 'wall') color = 0x333333;
-            else if (cell.sprite === 'gold') color = 0xffff00;
+            let frame;
+            if (cell.sprite === 'empty') frame = 1; // Assuming 'grass.png' is at position (1, 0)
+            else if (cell.sprite === 'red') frame = 2; // Assuming 'knight1.png' is at position (2, 0)
+            else if (cell.sprite === 'blue') frame = 3; // Assuming 'knight2.png' is at position (3, 0)
+            else if (cell.sprite === 'wall') frame = 4; // Assuming 'rock.png' is at position (4, 0)
+            else if (cell.sprite === 'gold') frame = 0; // Assuming 'gold.png' is at position (0, 0)
             else alert('Unknown sprite: ' + cell.sprite);
 
-            this.add.rectangle(cell.x * 50, cell.y * 50, 50, 50, color).setOrigin(0);
+            this.add.image(cell.x * 50, cell.y * 50, 'sprites', frame).setOrigin(0);
         });
     }
 
