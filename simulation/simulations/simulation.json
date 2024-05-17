@@ -2,12 +2,12 @@
     "grid": {
         "layout": [
             "X X X X X X X X",
-            "X . . . . . . X",
-            "X . . . . X . X",
-            "X . X X X X . X",
-            "X . . X . . . X",
-            "X . . X . . X X",
-            "X . . . . . . X",
+            "X 1 . . . G . X",
+            "X . . G . X . X",
+            "X . X X X X G X",
+            "X . . X G . . X",
+            "X . G X . . X X",
+            "X . . . . . 2 X",
             "X X X X X X X X"
         ]
     },

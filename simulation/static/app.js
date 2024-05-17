@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (cell.sprite === 'red') color = 0xff0000;
             else if (cell.sprite === 'blue') color = 0x0000ff;
             else if (cell.sprite === 'wall') color = 0x333333;
+            else if (cell.sprite === 'gold') color = 0xffff00;
             else alert('Unknown sprite: ' + cell.sprite);
 
             this.add.rectangle(cell.x * 50, cell.y * 50, 50, 50, color).setOrigin(0);

@@ -1,8 +1,10 @@
 import time
 import copy
 import random
-from .agent import Agent
 from .grid import Grid
+from .agent import Agent
+from .item import Item
+
 
 class Simulation:
 
@@ -14,12 +16,45 @@ class Simulation:
 
         # Process the config.
         self.raiseIfConfigInvalid(config)
+
+        # Greate the grid.
         self.grid = Grid(config["grid"])
         self.agents = {}
-        for agent_config in config["agents"]:
-            agent = Agent(agent_config["identifier"], agent_config["name"], agent_config["x"], agent_config["y"])
-            self.agents[agent.id] = agent
+        self.entities = []
+
+        # Get the agent and entities positions.
+        layout = config["grid"]["layout"]
+        agent_positions = []
+        entities_positions = []
+        y = 0
+        for row in layout:
+            row = row.replace(" ", "")
+            x = 0
+            for cell in row:
+                if cell in ["1", "2"]:
+                    agent_positions += [(x, y)]
+                elif cell == "G":
+                    entities_positions += [("gold", x, y)]
+                x += 1
+            y += 1
+
+        # Create the agents.
+        for agent_index, agent_config in enumerate(config["agents"]):
+            identifier = agent_config.get("identifier")
+            name = agent_config.get("name")
+            x = agent_positions[agent_index][0]
+            y = agent_positions[agent_index][1] 
+            agent = Agent(identifier, name, x, y)
+            self.agents[identifier] = agent
         self.update_interval_seconds = config.get("update_interval_seconds", 1.0)
+
+        # Create the entities.
+        for entity_type, entity_x, entity_y in entities_positions:
+            entity = Item(entity_type, entity_x, entity_y)
+            self.entities.append(entity)
+
+
+
 
 
     def raiseIfConfigInvalid(self, config):
@@ -46,7 +81,15 @@ class Simulation:
                     "sprite": self.grid.get_celltype_at(x, y)
                 })
 
-        # Add the agent cells to the renderer data.
+        # Add the entities to the renderer data.
+        for entity in self.entities:
+            grid_cells.append({
+                "x": entity.x,
+                "y": entity.y,
+                "sprite": entity.name,
+            })
+
+        # Add the agents to the renderer data.
         for agent in self.agents.values():
             grid_cells.append({
                 "x": agent.x,
