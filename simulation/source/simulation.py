@@ -155,6 +155,8 @@ class Simulation:
 
         # Update the grid.
         self.grid.clear_entities()
+        for entity in self.entities:
+            self.grid.add_entity(entity, entity.x, entity.y)
         for agent in self.agents.values():
             self.grid.add_entity(agent, agent.x, agent.y)
 
@@ -163,6 +165,7 @@ class Simulation:
 
             # Create the observation.
             agent.observations = self.compute_agent_observations(agent.x, agent.y)
+
 
     def perform_agent_action(self, agent_id, action):
         print(agent_id, action)
@@ -219,7 +222,10 @@ class Simulation:
             for y in range(agent_y - grid_size // 2, agent_y + grid_size // 2 + 1):
                 if x < 0 or x >= self.grid.width or y < 0 or y >= self.grid.height:
                     continue
-                elements = [self.grid.get_celltype_at(x, y)]
+                elements = []
+                cell_type = self.grid.get_celltype_at(x, y)
+                if cell_type not in ["empty"]:
+                    elements.append(cell_type)
                 elements += self.grid.get_entities_at(x, y)
                 if elements == []:
                     continue

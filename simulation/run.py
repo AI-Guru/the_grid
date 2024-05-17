@@ -33,7 +33,7 @@ class Server:
     def get_renderer_data(self):
         renderer_data = self.simulation.get_renderer_data()
         return jsonify(renderer_data)
-
+    
     def handle_connect(self):
         # Get the client id from the request headers.
         client_id = request.headers.get("id")
