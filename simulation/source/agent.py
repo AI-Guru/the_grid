@@ -7,3 +7,4 @@ class Agent(Entity):
         self.id = agent_id
         self.observations = []
         self.actions = []
+        self.inventory = []

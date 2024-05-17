@@ -31,6 +31,7 @@ class SocketAgent:
         raise NotImplementedError("Subclasses must implement this method")
 
 
-    def start(self):
+    def start(self, wait=True):
         self.sio.connect(self.server_url, headers={'id': self.client_id})
-        self.sio.wait()
+        if wait:
+            self.sio.wait()

@@ -200,6 +200,34 @@ class Simulation:
                 agent.x = new_x
                 agent.y = new_y
 
+        # Handle pickup action.
+        elif action == "pickup":
+            entities = self.grid.get_entities_at(agent.x, agent.y)
+            item = None
+            for entity in entities:
+                if isinstance(entity, Item):
+                    item = entity
+                    break
+            if item is not None:
+                agent.inventory.append(item)
+                self.entities.remove(item)
+                print(f"Agent {agent_id} picked up item {item.name}")
+
+        # Handle drop action.
+        elif action == "drop":
+            entities = self.grid.get_entities_at(agent.x, agent.y)
+            items = [entity for entity in entities if isinstance(entity, Item)]
+            if len(items) == 0 and len(agent.inventory) > 0:
+                item = agent.inventory.pop()
+                item.x = agent.x
+                item.y = agent.y
+                self.entities.append(item)
+                print(f"Agent {agent_id} dropped item {item.name}")
+            else:
+                print(f"Agent {agent_id} cannot drop item at {agent.x}, {agent.y} because there are items there")
+
+
+
         else:
             print(f"Invalid action: {action}")
 
@@ -224,7 +252,7 @@ class Simulation:
                 cell_type = self.grid.get_celltype_at(x, y)
                 if cell_type not in ["empty"]:
                     elements.append(cell_type)
-                elements += self.grid.get_entities_at(x, y)
+                elements += self.grid.get_entity_names_at(x, y)
                 if elements == []:
                     continue
                 observations["cells"].append({

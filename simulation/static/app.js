@@ -1,9 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     const config = {
         type: Phaser.AUTO,
-        width: 800,
-        height: 600,
+        width: 1024,
+        height: 1024,
         parent: 'game-container',
+        pixelArt: true,  // Enable pixel art mode to prevent blurring
         scene: {
             preload: preload,
             create: create,
@@ -26,6 +27,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function create() {
         // Fetch the initial data
         fetchGridData();
+        
+        // Set camera zoom to 2x
+        //this.cameras.main.setZoom(2);
+
+
     }
 
     function update() {
@@ -45,7 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (cell.sprite === 'gold') frame = 0; // Assuming 'gold.png' is at position (0, 0)
             else alert('Unknown sprite: ' + cell.sprite);
 
-            this.add.image(cell.x * 50, cell.y * 50, 'sprites', frame).setOrigin(0);
+            // Make it double the size. The sprite sheet is 64x64, so we need to multiply by 2. Also scale the sprite.
+            //this.add.image(cell.x * 50, cell.y * 50, 'sprites', frame).setOrigin(0);
+            this.add.image(cell.x * spriteSize * 2, cell.y * spriteSize * 2, 'sprites', frame).setOrigin(0).setScale(2);
         });
     }
 

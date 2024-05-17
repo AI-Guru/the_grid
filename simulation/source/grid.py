@@ -47,9 +47,11 @@ class Grid:
     def get_celltype_at(self, x, y):
         return self.static_cells[y][x]
 
-    def get_entities_at(self, x, y):
+    def get_entity_names_at(self, x, y):
         # Include the names of the entities in the list.
         return [entity.name for entity in self.cells_entities[y][x]]
 
+    def get_entities_at(self, x, y):
+        return self.cells_entities[y][x]
 
     
