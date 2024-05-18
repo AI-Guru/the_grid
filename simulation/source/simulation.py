@@ -279,9 +279,9 @@ class Simulation:
                 if agent.name in elements:
                     elements.remove(agent.name)
 
-                # If there is nothing in the cell, skip it.
+                # If there is nothing in the cell make it empty.
                 if elements == []:
-                    continue
+                    elements = "empty"
 
                 x_relative = x - agent.x
                 y_relative = y - agent.y
