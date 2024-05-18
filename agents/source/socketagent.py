@@ -22,7 +22,7 @@ class SocketAgent:
 
 
     def __on_message(self, data):
-        print(f"{self.client_id}: Received message: {data['observations']}")
+        #print(f"{self.client_id}: Received message: {data['observations']}")
         response = self._handle_message(data)
         self.sio.emit('response', {'id': self.client_id, 'response': response})
 

@@ -19,6 +19,14 @@
         {
             "filename": "rock.png",
             "pos": "4 0"
+        },
+        {
+            "filename": "trove.png",
+            "pos": "0 1"
+        },
+        {
+            "filename": "wumpus.png",
+            "pos": "1 1"
         }
     ]
 }

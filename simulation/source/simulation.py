@@ -1,6 +1,7 @@
 import time
 import copy
 import random
+import json
 from .grid import Grid
 from .agent import Agent
 from .item import Item
@@ -35,6 +36,10 @@ class Simulation:
                     agent_positions += [(x, y)]
                 elif cell == "G":
                     entities_positions += [("gold", x, y)]
+                elif cell == "T":
+                    entities_positions += [("trove", x, y)]
+                elif cell == "W":
+                    entities_positions += [("wumpus", x, y)]
                 x += 1
             y += 1
 
@@ -162,7 +167,9 @@ class Simulation:
         for agent in self.agents.values():
 
             # Create the observation.
-            agent.observations = self.compute_agent_observations(agent.x, agent.y)
+            agent.observations = self.compute_agent_observations(agent)
+
+            #print(json.dumps(agent.observations, indent=2))
 
 
     def perform_agent_action(self, agent_id, action):
@@ -232,32 +239,58 @@ class Simulation:
             print(f"Invalid action: {action}")
 
 
-    def compute_agent_observations(self, agent_x, agent_y):
-        # Get all the cells in the grid around it. The agent is in the center. The grid is a square.
-        # Use the grid size to determine the size of the grid.
-        grid_size = 3
+    def compute_agent_observations(self, agent):
+
+        # Empty observations.
         observations = {
-            "me": {
-                "x": agent_x,
-                "y": agent_y,
-            },
-            "step": self.simulation_step,
-            "cells": [],
         }
-        for x in range(agent_x - grid_size // 2, agent_x + grid_size // 2 + 1):
-            for y in range(agent_y - grid_size // 2, agent_y + grid_size // 2 + 1):
+
+        # Add the agents positions.
+        observations["me"] = {
+            "x": agent.x,
+            "y": agent.y,
+        }
+
+        # Add the step.
+        observations["step"] = self.simulation_step
+
+        # Add the inventory.
+        observations["inventory"] = [item.name for item in agent.inventory]
+
+        # Get all the cells in the grid around it. The agent is in the center. The grid is a square.
+        observations["cells"] = []
+        grid_size = 3
+        for x in range(agent.x - grid_size // 2, agent.x + grid_size // 2 + 1):
+            for y in range(agent.y - grid_size // 2, agent.y + grid_size // 2 + 1):
+
+                # Skip the cell if it is out of bounds.
                 if x < 0 or x >= self.grid.width or y < 0 or y >= self.grid.height:
                     continue
+
                 elements = []
+                
+                # Get the elements in the cell.
                 cell_type = self.grid.get_celltype_at(x, y)
                 if cell_type not in ["empty"]:
                     elements.append(cell_type)
                 elements += self.grid.get_entity_names_at(x, y)
+
+                # Remove the agent from the elements.
+                if agent.name in elements:
+                    elements.remove(agent.name)
+
+                # If there is nothing in the cell, skip it.
                 if elements == []:
                     continue
+
+                x_relative = x - agent.x
+                y_relative = y - agent.y
+                
                 observations["cells"].append({
                     "x": x,
                     "y": y,
+                    "x_relative": x_relative,
+                    "y_relative": y_relative,
                     "elements": elements,
                 })
 

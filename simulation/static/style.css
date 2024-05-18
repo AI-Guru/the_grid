@@ -13,8 +13,8 @@ h1 {
 }
 
 #game-container {
-    width: 1024px;
-    height: 1024px;
+    width:  1152px;
+    height: 1152px;
     margin-top: 20px;
     background-color: #ffffff;
     border: 4px solid #000000; /* 2px black border */
