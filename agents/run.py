@@ -5,7 +5,7 @@ import dotenv
 
 dotenv.load_dotenv()
 
-os.environ["LANGCHAIN_PROJECT"] = "thegrid"
+#os.environ["LANGCHAIN_PROJECT"] = "thegrid"
 
 def run():
     client_id = "agent1"
