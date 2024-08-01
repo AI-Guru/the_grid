@@ -93,7 +93,7 @@ class LlmAgent(SocketAgent):
         for cell in observations["cells"]:
             x_relative = cell["x_relative"]
             y_relative = cell["y_relative"]
-            relavite_positions = {
+            relative_positions = {
                     (0, 0): "center",
                     (0, -1): "up",
                     (0, 1): "down",
@@ -104,19 +104,20 @@ class LlmAgent(SocketAgent):
                     (-1, 1): "down and left",
                     (1, 1): "down and right",
                 }
-            relavite_position = relavite_positions[(x_relative, y_relative)]
-            assert relavite_position is not None, f"Invalid relative position: {x_relative}, {y_relative}"
+            #relative_position = relative_positions[(x_relative, y_relative)]
+            relative_position = [x_relative, y_relative]
+            assert relative_position is not None, f"Invalid relative position: {x_relative}, {y_relative}"
 
             elements = cell["elements"]
-            if isinstance(elements, list) and relavite_position != "center":
+            if isinstance(elements, list) and relative_position != "center":
                 elements = ", ".join(elements)
-                text += f"- You see these elements at position {relavite_position}: {elements}.\n"
-            elif isinstance(elements, list) and relavite_position == "center":
+                text += f"- You see these elements at position {relative_position}: {elements}.\n"
+            elif isinstance(elements, list) and relative_position == "center":
                 elements = ", ".join(elements)
                 text += f"- You are standing on these elements: {elements}.\n"
-            elif elements == "empty" and relavite_position != "center":
-                text += f"- You see nothing at position {relavite_position}.\n"
-            elif elements == "empty" and relavite_position == "center":
+            elif elements == "empty" and relative_position != "center":
+                text += f"- You see nothing at position {relative_position}.\n"
+            elif elements == "empty" and relative_position == "center":
                 text += f"- You are standing on nothing.\n"
             else:
                 assert False, f"Invalid elements: {elements}"

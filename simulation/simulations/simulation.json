@@ -18,5 +18,8 @@
             "identifier": "agent1",
             "name": "red"
         }
-    ]
+    ],
+    "observation": {
+        "mode": "all"
+    }
 }

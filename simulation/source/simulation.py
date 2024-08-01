@@ -2,6 +2,7 @@ import time
 import copy
 import random
 import json
+import itertools
 from .grid import Grid
 from .agent import Agent
 from .item import Item
@@ -57,6 +58,9 @@ class Simulation:
         for entity_type, entity_x, entity_y in entities_positions:
             entity = Item(entity_type, entity_x, entity_y)
             self.entities.append(entity)
+
+        # Set the config.
+        self.config = config
 
 
     def raiseIfConfigInvalid(self, config):
@@ -121,13 +125,16 @@ class Simulation:
     def get_agent(self, agent_id):
         return self.agents.get(agent_id)
 
+
     def add_action(self, agent_id, action):
         self.actions[agent_id] = action
+
 
     def get_agent_observations(self, agent_id):
         assert agent_id in self.agents, f"Invalid agent id: {agent_id}"
         agent = self.agents.get(agent_id)
         return agent.observations
+
 
     def step(self):
 
@@ -141,6 +148,7 @@ class Simulation:
         #    print("Simulation is running too slow.")
         #else:
             #time.sleep(time_to_sleep)
+
 
     def update(self):
         # TODO: Execute actions. Use randomness.
@@ -224,7 +232,15 @@ class Simulation:
         elif action == "drop":
             entities = self.grid.get_entities_at(agent.x, agent.y)
             items = [entity for entity in entities if isinstance(entity, Item)]
-            if len(items) == 0 and len(agent.inventory) > 0:
+            
+            is_trove = any([entity.name == "trove" for entity in items])
+            first_inventory_item_is_gold = len(agent.inventory) > 0 and agent.inventory[0].name == "gold"
+
+
+            if is_trove and first_inventory_item_is_gold:
+                agent.inventory.pop()
+                print(f"Agent {agent_id} dropped gold at {agent.x}, {agent.y}")
+            elif len(items) == 0 and len(agent.inventory) > 0:
                 item = agent.inventory.pop()
                 item.x = agent.x
                 item.y = agent.y
@@ -257,42 +273,60 @@ class Simulation:
         # Add the inventory.
         observations["inventory"] = [item.name for item in agent.inventory]
 
+        # Handle the observation mode.
+        if "observation" not in self.config:
+            raise ValueError("Missing 'observation' key in simulation config")
+        if "mode" not in self.config["observation"]:
+            raise ValueError("Missing 'mode' key in observation config")
+
         # Get all the cells in the grid around it. The agent is in the center. The grid is a square.
+        if self.config["observation"]["mode"] == "square":
+            if "grid_size" not in self.config["observation"]:
+                raise ValueError("Missing 'grid_size' key in observation config")
+            grid_size = self.config["observation"]["grid_size"]
+            if grid_size % 2 == 0:
+                raise ValueError("The grid size must be an odd number")
+            start_x = agent.x - grid_size // 2
+            start_x = max(0, start_x)
+            end_x = agent.x + grid_size // 2 + 1
+            end_x = min(self.grid.width, end_x)
+            start_y = agent.y - grid_size // 2
+            start_y = max(0, start_y)
+            end_y = agent.y + grid_size // 2 + 1
+            end_y = min(self.grid.height, end_y)
+            range_x = range(start_x, end_x)
+            range_y = range(start_y, end_y)
+            cell_coordinates = list(itertools.product(range_x, range_y))
+
+        # Get all the cells in the grid.
+        elif self.config["observation"]["mode"] == "all":
+            cell_coordinates = list(itertools.product(range(self.grid.width), range(self.grid.height)))
+
+        # Should not happen.
+        else:
+            raise ValueError("Invalid observation mode")
+    
+        # Go through all the cells.
         observations["cells"] = []
-        grid_size = 3
-        for x in range(agent.x - grid_size // 2, agent.x + grid_size // 2 + 1):
-            for y in range(agent.y - grid_size // 2, agent.y + grid_size // 2 + 1):
-
-                # Skip the cell if it is out of bounds.
-                if x < 0 or x >= self.grid.width or y < 0 or y >= self.grid.height:
-                    continue
-
-                elements = []
-                
-                # Get the elements in the cell.
-                cell_type = self.grid.get_celltype_at(x, y)
-                if cell_type not in ["empty"]:
-                    elements.append(cell_type)
-                elements += self.grid.get_entity_names_at(x, y)
-
-                # Remove the agent from the elements.
-                if agent.name in elements:
-                    elements.remove(agent.name)
-
-                # If there is nothing in the cell make it empty.
-                if elements == []:
-                    elements = "empty"
-
-                x_relative = x - agent.x
-                y_relative = y - agent.y
-                
-                observations["cells"].append({
-                    "x": x,
-                    "y": y,
-                    "x_relative": x_relative,
-                    "y_relative": y_relative,
-                    "elements": elements,
-                })
+        for x, y in cell_coordinates:
+            elements = []
+            cell_type = self.grid.get_celltype_at(x, y)
+            if cell_type not in ["empty"]:
+                elements.append(cell_type)
+            elements += self.grid.get_entity_names_at(x, y)
+            if agent.name in elements:
+                elements.remove(agent.name)
+            if elements == []:
+                elements = "empty"
+            x_relative = x - agent.x
+            y_relative = y - agent.y
+            observations["cells"].append({
+                "x": x,
+                "y": y,
+                "x_relative": x_relative,
+                "y_relative": y_relative,
+                "elements": elements,
+            })
 
         return observations
 
