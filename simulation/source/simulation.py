@@ -6,6 +6,7 @@ import itertools
 from .grid import Grid
 from .agent import Agent
 from .item import Item
+from .layoutgenerator import LayoutGenerator
 
 
 class Simulation:
@@ -19,13 +20,18 @@ class Simulation:
         # Process the config.
         self.raiseIfConfigInvalid(config)
 
+        if config["grid"]["type"] == "custom":
+            layout = config["grid"]["layout"]
+        else:
+            layout = LayoutGenerator.generate(**config["grid"]["parameters"])
+            config["grid"]["layout"] = layout
+
         # Greate the grid.
         self.grid = Grid(config["grid"])
         self.agents = {}
         self.entities = []
 
         # Get the agent and entities positions.
-        layout = config["grid"]["layout"]
         agent_positions = []
         entities_positions = []
         y = 0
@@ -329,6 +335,15 @@ class Simulation:
             })
 
         return observations
+
+    def is_finished(self):
+
+        # Return true if there is no more gold in the grid and no agent has gold in its inventory.
+        if len([entity for entity in self.entities if entity.name == "gold"]) == 0:
+            if all([len(agent.inventory) == 0 for agent in self.agents.values()]):
+                return True
+            
+        return False
 
 
     def stop(self):

@@ -1,16 +1,14 @@
 {
     "grid": {
-        "layout": [
-            "X X X X X X X X X",
-            "X 1 . . . . G . X",
-            "X . . G . . X . X",
-            "X . X X . X X G X",
-            "X . . X T G . . X",
-            "X . G X . . . X X",
-            "X . G X . . . X X",
-            "X . . . . . . . X",
-            "X X X X X X X X X"
-        ]
+        "type": "random",
+        "parameters": {
+            "seed": null,
+            "width": 9,
+            "height": 9,
+            "obstacle_density": 0.1,
+            "gold_density": 0.1,
+            "agents": 1
+        }
     },
     "update_interval_seconds": 1.0,
     "agents": [

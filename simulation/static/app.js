@@ -68,5 +68,5 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error('Error fetching grid data:', error));
     }
 
-    setInterval(fetchGridData, 1000);  // Update the data every second
+    setInterval(fetchGridData, 10);  // Update the data every n milliseconds.
 });

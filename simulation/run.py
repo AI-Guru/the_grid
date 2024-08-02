@@ -12,13 +12,14 @@ class Server:
         self.app.config['SECRET_KEY'] = secret_key
         self.socketio = SocketIO(self.app)
         self.clients = {}
-        
+        self.sleep_time = 0.1
+
         # Load simulation configuration
         if not os.path.exists(simulation_config_path):
             raise ValueError(f"Simulation file not found: {simulation_config_path}")
         with open(simulation_config_path) as f:
-            simulation_config = json.load(f)
-        self.simulation = Simulation(simulation_config)
+            self.simulation_config = json.load(f)
+        self.simulation = Simulation(self.simulation_config)
 
         # Register routes and event handlers
         self.app.route('/')(self.index)
@@ -60,6 +61,10 @@ class Server:
         self.simulation.add_action(data['id'], data['response'])
 
     def main_loop(self):
+
+        if self.simulation.is_finished():
+            self.simulation = Simulation(self.simulation.config)
+
         # Let the simulation step
         self.simulation.step()
 
@@ -73,7 +78,7 @@ class Server:
         self.socketio.start_background_task(self.timer_callback)
 
     def timer_callback(self):
-        self.socketio.sleep(1)
+        self.socketio.sleep(self.sleep_time)
         self.main_loop()
 
     def run(self, host='0.0.0.0', port=5666):

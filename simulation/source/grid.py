@@ -35,8 +35,9 @@ class Grid:
 
 
     def raiseIfConfigInvalid(self, config):
-        if "layout" not in config:
-            raise ValueError("Missing 'width' key in grid config")
+        #if "layout" not in config:
+        #    raise ValueError("Missing 'width' key in grid config")
+        pass
 
     def clear_entities(self):
         self.cells_entities = [[[] for _ in range(self.width)] for _ in range(self.height)]
