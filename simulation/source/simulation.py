@@ -110,9 +110,24 @@ class Simulation:
                 "sprite": agent.name,
             })
 
+        # Add the agent data.
+        agent_data_list = []
+        for agent in self.agents.values():
+            agent_data = {
+                "id": agent.id,
+                "x": agent.x,
+                "y": agent.y,
+                "inventory": [item.name for item in agent.inventory],
+                "score": agent.score
+            }
+            agent_data_list.append(agent_data)
+
         # Return the data for rendering.
         renderer_data = {
+            "grid_width": grid_width,
+            "grid_height": grid_height,
             "grid_cells": grid_cells,
+            "agent_data": agent_data_list
         }
         return renderer_data
 
@@ -191,10 +206,13 @@ class Simulation:
         assert agent_id in self.agents, f"Invalid agent id: {agent_id}, {self.agents.keys()}"
         agent = self.agents[agent_id]
 
+        if action is None:
+            return
+
         action = action["action"]
         action_to_move = {
-            "up": (0, -1),
-            "down": (0, 1),
+            "up": (0, 1),
+            "down": (0, -1),
             "left": (-1, 0),
             "right": (1, 0),
         }
@@ -242,10 +260,13 @@ class Simulation:
             is_trove = any([entity.name == "trove" for entity in items])
             first_inventory_item_is_gold = len(agent.inventory) > 0 and agent.inventory[0].name == "gold"
 
-
+            # Dropping gold in a trove.
             if is_trove and first_inventory_item_is_gold:
                 agent.inventory.pop()
+                agent.score += 1
                 print(f"Agent {agent_id} dropped gold at {agent.x}, {agent.y}")
+            
+            # Dropping an item on an empty cell.
             elif len(items) == 0 and len(agent.inventory) > 0:
                 item = agent.inventory.pop()
                 item.x = agent.x

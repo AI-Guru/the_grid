@@ -14,6 +14,10 @@ class Server:
         self.clients = {}
         self.sleep_time = 0.1
 
+        # Statistics.
+        self.durations = []
+        self.average_duration = 0
+
         # Load simulation configuration
         if not os.path.exists(simulation_config_path):
             raise ValueError(f"Simulation file not found: {simulation_config_path}")
@@ -33,7 +37,15 @@ class Server:
         return render_template('index.html')
 
     def get_renderer_data(self):
+        # Get the render data.
         renderer_data = self.simulation.get_renderer_data()
+
+        # Add statistics to the data.
+        renderer_data["statistics"] = {
+            "current_step": self.simulation.simulation_step,
+            "average_duration": f"{self.average_duration:.2f}",
+        }
+
         return jsonify(renderer_data)
     
     def serve_static_file(self, filename):
@@ -63,6 +75,8 @@ class Server:
     def main_loop(self):
 
         if self.simulation.is_finished():
+            self.durations.append(self.simulation.simulation_step)
+            self.average_duration = sum(self.durations) / len(self.durations)
             self.simulation = Simulation(self.simulation.config)
 
         # Let the simulation step

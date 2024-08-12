@@ -8,3 +8,4 @@ class Agent(Entity):
         self.observations = []
         self.actions = []
         self.inventory = []
+        self.score = 0

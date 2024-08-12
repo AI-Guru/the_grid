@@ -13,7 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const game = new Phaser.Game(config);
+    let gridWidth = 0;
+    let gridHeight = 0;
     let gridData = [];
+    let agentData = [];
+    let statistics = {};
     const spriteSize = 64;
 
     function preload() {
@@ -41,6 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add a black background
         this.add.rectangle(0, 0, 800, 600, 0x000000).setOrigin(0);
 
+
+
         // Render the grid
         gridData.forEach(cell => {
             let frame;
@@ -55,15 +61,42 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Make it double the size. The sprite sheet is 64x64, so we need to multiply by 2. Also scale the sprite.
             //this.add.image(cell.x * 50, cell.y * 50, 'sprites', frame).setOrigin(0);
-            this.add.image(cell.x * spriteSize * 2, cell.y * spriteSize * 2, 'sprites', frame).setOrigin(0).setScale(2);
+            this.add.image(cell.x * spriteSize * 2, (gridHeight - cell.y) * spriteSize * 2, 'sprites', frame).setOrigin(0).setScale(2);
         });
+
+        // Update the statistics. They are key-value pairs. Add them as paragraphs to the DOM. The target div is text-container.
+        const textContainer = document.getElementById('text-container');
+        textContainer.innerHTML = '';
+        
+        // Add the agent data. Agent data is a list.
+        agentData.forEach(agent => {
+            const p = document.createElement('p');
+            const keys = ["id", "score", "inventory"];
+            keys.forEach(key => {
+                var value = agent[key];
+                const innerP = document.createElement('p');
+                innerP.innerText = `${key}: ${value}`;
+                p.appendChild(innerP);
+            });
+            //p.innerText = `Agent ${agent.id}: ${agent.score}`;
+            textContainer.appendChild(p);
+        });
+        for (const key in statistics) {
+            const p = document.createElement('p');
+            p.innerText = `${key}: ${statistics[key]}`;
+            textContainer.appendChild(p);
+        }
     }
 
     function fetchGridData() {
         fetch('/api/renderer/data')
             .then(response => response.json())
             .then(data => {
+                gridWidth = data.grid_width;
+                gridHeight = data.grid_height;
                 gridData = data.grid_cells;
+                agentData = data.agent_data;
+                statistics = data.statistics;
             })
             .catch(error => console.error('Error fetching grid data:', error));
     }
