@@ -6,11 +6,8 @@ from .socketagent import SocketAgent
 
 class CodedAgent(SocketAgent):
 
-
     def __init__(self, client_id, server_url):
         super().__init__(client_id, server_url)
-
-
 
 
     def _handle_message(self, data):
@@ -87,9 +84,9 @@ class CodedAgent(SocketAgent):
                 action = "right"
             elif next_x < me_x:
                 action = "left"
-            elif next_y > me_y:
-                action = "down"
             elif next_y < me_y:
+                action = "down"
+            elif next_y > me_y:
                 action = "up"
             else:
                 print(me_x, me_y, next_x, next_y)
@@ -118,9 +115,9 @@ class CodedAgent(SocketAgent):
             elif next_x < me_x:
                 action = "left"
             elif next_y > me_y:
-                action = "down"
-            elif next_y < me_y:
                 action = "up"
+            elif next_y < me_y:
+                action = "down"
             else:
                 print(me_x, me_y, next_x, next_y)
                 raise Exception("Unknown action.")

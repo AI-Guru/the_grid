@@ -118,7 +118,8 @@ class Simulation:
                 "x": agent.x,
                 "y": agent.y,
                 "inventory": [item.name for item in agent.inventory],
-                "score": agent.score
+                "score": agent.score,
+                "action_count": agent.action_count
             }
             agent_data_list.append(agent_data)
 
@@ -208,6 +209,8 @@ class Simulation:
 
         if action is None:
             return
+
+        agent.action_count += 1
 
         action = action["action"]
         action_to_move = {

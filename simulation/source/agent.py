@@ -9,3 +9,4 @@ class Agent(Entity):
         self.actions = []
         self.inventory = []
         self.score = 0
+        self.action_count = 0

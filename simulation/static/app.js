@@ -45,8 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add a black background
         this.add.rectangle(0, 0, 800, 600, 0x000000).setOrigin(0);
 
-
-
         // Render the grid
         gridData.forEach(cell => {
             let frame;
@@ -61,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Make it double the size. The sprite sheet is 64x64, so we need to multiply by 2. Also scale the sprite.
             //this.add.image(cell.x * 50, cell.y * 50, 'sprites', frame).setOrigin(0);
-            this.add.image(cell.x * spriteSize * 2, (gridHeight - cell.y) * spriteSize * 2, 'sprites', frame).setOrigin(0).setScale(2);
+            this.add.image(cell.x * spriteSize * 2, (gridHeight - cell.y - 1) * spriteSize * 2, 'sprites', frame).setOrigin(0).setScale(2);
         });
 
         // Update the statistics. They are key-value pairs. Add them as paragraphs to the DOM. The target div is text-container.
@@ -71,13 +69,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add the agent data. Agent data is a list.
         agentData.forEach(agent => {
             const p = document.createElement('p');
-            const keys = ["id", "score", "inventory"];
+            p.appendChild(document.createTextNode(`Agent ${agent.id}: `));
+            const list = document.createElement('ul');
+            const keys = ["id", "score", "inventory", "action_count"];
             keys.forEach(key => {
                 var value = agent[key];
-                const innerP = document.createElement('p');
-                innerP.innerText = `${key}: ${value}`;
-                p.appendChild(innerP);
+                const li = document.createElement('li');
+                li.appendChild(document.createTextNode(`${key}: ${value}`));
+                list.appendChild(li);
             });
+            p.appendChild(list);
             //p.innerText = `Agent ${agent.id}: ${agent.score}`;
             textContainer.appendChild(p);
         });
