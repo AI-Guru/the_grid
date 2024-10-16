@@ -7,6 +7,7 @@ import uvicorn
 from dotenv import load_dotenv
 import sys
 sys.path.append("..")
+from source.llmengine import LLMEngine
 from source.simulationrenderer import SimulationRenderer
 from simulation.source.simulation import Simulation
 
@@ -33,16 +34,25 @@ class GradioApp:
     def build_interface(self):
         with gr.Blocks() as self.demo:
             with gr.Tabs() as self.tabs:
+                
                 # A tab for the title.
-                with gr.Tab("Title", id=0):
-                    # Render Title tab content
-                    start_button, highscore_button = self.render_title_tab()
+                #with gr.Tab("Title", id=0):
+                #    # Render Title tab content
+                #    start_button, highscore_button = self.render_title_tab()
 
                 # A tab for the game.
                 with gr.Tab("Game", id=1):
                     # Render Game tab content
                     elements = self.render_game_tab()
-                    back_button, left_button, right_button, up_button, down_button, image_html = elements
+                    instructions_textbox = elements["instructions_textbox"]
+                    run_button = elements["run_button"]
+                    left_button = elements["left_button"]
+                    right_button = elements["right_button"]
+                    up_button = elements["up_button"]
+                    down_button = elements["down_button"]
+                    image_html = elements["image_html"]
+
+                    self.instructions_textbox = instructions_textbox
 
                 # A tab for the high score.
                 with gr.Tab("High Score", id=2):
@@ -50,22 +60,22 @@ class GradioApp:
                     back_to_title_button = self.render_highscore_tab()
 
             # When the start button is clicked, switch to the "Game" tab
-            start_button.click(self.change_tab, inputs=[gr.State(1)], outputs=self.tabs)
+            #start_button.click(self.change_tab, inputs=[gr.State(1)], outputs=self.tabs)
 
             # When the highscore button is clicked, switch to the "High Score" tab
-            highscore_button.click(self.change_tab, inputs=[gr.State(2)], outputs=self.tabs)
-
-            # When the back button in the game tab is clicked, switch back to the "Title" tab
-            back_button.click(self.change_tab, inputs=[gr.State(0)], outputs=self.tabs)
+            #highscore_button.click(self.change_tab, inputs=[gr.State(2)], outputs=self.tabs)
 
             # When the back button in the high score tab is clicked, switch back to the "Title" tab
             back_to_title_button.click(self.change_tab, inputs=[gr.State(0)], outputs=self.tabs)
 
             # When the left button is clicked, execute the left action and update the image.
-            left_button.click(self.execute_simulation_action, inputs=[gr.State("left")], outputs=image_html)
-            right_button.click(self.execute_simulation_action, inputs=[gr.State("right")], outputs=image_html)
-            up_button.click(self.execute_simulation_action, inputs=[gr.State("up")], outputs=image_html)
-            down_button.click(self.execute_simulation_action, inputs=[gr.State("down")], outputs=image_html)
+            left_button.click(self.execute_simulation_action, inputs=[gr.State("left")], outputs=image_html, show_progress=False)
+            right_button.click(self.execute_simulation_action, inputs=[gr.State("right")], outputs=image_html, show_progress=False)
+            up_button.click(self.execute_simulation_action, inputs=[gr.State("up")], outputs=image_html, show_progress=False)
+            down_button.click(self.execute_simulation_action, inputs=[gr.State("down")], outputs=image_html, show_progress=False)
+
+            #
+            run_button.click(self.handle_run_button_click, inputs=[instructions_textbox], outputs=None, show_progress=False)
 
     # General function to change tabs by index
     def change_tab(self, tab_index):
@@ -82,22 +92,50 @@ class GradioApp:
     # Function to render the Game tab
     def render_game_tab(self):
         gr.Markdown("### Game")
-        back_button = gr.Button("Back to Title")
+        #back_button = gr.Button("Back to Title")
 
         # Buttons for simulation actions
-        left_button = gr.Button("Left")
-        right_button = gr.Button("Right")
-        up_button = gr.Button("Up")
-        down_button = gr.Button("Down")
+        with gr.Row():
+            with gr.Column():
 
-        # Custom HTML for dynamic image update
-        image_html = gr.HTML('''
-            <div id="image-container">
-                <img id="simulation-image" src="/static/grid_render.png" width="600px" />
-            </div>
-        ''')
+                instructions_textbox = gr.Textbox("Gehe drei Felder runter", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
+                run_button = gr.Button("Run")
+                left_button = gr.Button("Left")
+                right_button = gr.Button("Right")
+                up_button = gr.Button("Up")
+                down_button = gr.Button("Down")
 
-        return back_button, left_button, right_button, up_button, down_button, image_html
+            with gr.Column():
+
+                # Custom HTML for dynamic image update
+                image_html = gr.HTML('''
+                    <div id="image-container">
+                        <img id="simulation-image" src="/static/grid_render.png" width="600px" />
+                    </div>
+                ''')
+
+        return {
+            "instructions_textbox": instructions_textbox,
+            "run_button": run_button,
+            "left_button": left_button,
+            "right_button": right_button,
+            "up_button": up_button,
+            "down_button": down_button,
+            "image_html": image_html
+        }
+    
+    def handle_run_button_click(self, instructions_textbox):
+        instructions = instructions_textbox
+        print(instructions)
+
+        # Get the model.
+        #llm = get_model("openai", "gpt-4o", temperature=0.5)
+
+        llm_engine = LLMEngine("openai", "gpt-4o", temperature=0.5)
+
+        plan = llm_engine.generate_plan(self.simulation, instructions)
+
+
 
     def execute_simulation_action(self, action):
         assert action in ["left", "right", "up", "down", "pickup", "drop"], f"Invalid action: {action}"
@@ -136,6 +174,9 @@ fast_api_app.mount("/static", StaticFiles(directory="static"), name="static")
 # Initialize Gradio
 gradio_app = GradioApp()  # Create an instance of the GradioApp class
 gradio_app.build_interface()  # Build the interface
+
+# Go to second tab.
+gradio_app.change_tab(gr.State(1))
 
 # Mount Gradio app onto FastAPI
 app = gr.mount_gradio_app(fast_api_app, gradio_app.demo, path="/")
