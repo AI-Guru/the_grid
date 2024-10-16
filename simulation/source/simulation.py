@@ -1,6 +1,7 @@
 import time
 import copy
 import random
+import os
 import json
 import itertools
 from .grid import Grid
@@ -16,6 +17,15 @@ class Simulation:
         self.running = False
         self.simulation_step = 0
         self.actions = {}
+
+        # If config is a file, load it with json.
+        if isinstance(config, str) and os.path.exists(config):
+            with open(config) as f:
+                config = json.load(f)
+        
+        # Raise an error of it is not a dictionary.
+        if not isinstance(config, dict):
+            raise ValueError("Invalid simulation config")
 
         # Process the config.
         self.raiseIfConfigInvalid(config)

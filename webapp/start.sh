@@ -1,0 +1,1 @@
+uvicorn run:run_app --reload
