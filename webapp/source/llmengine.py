@@ -18,8 +18,8 @@ class Action(BaseModel):
     )
 
 class Plan(BaseModel):
-    instructions: List[Action] = Field(
-        ..., title="Instructions", description="The list of instructions."
+    actions: List[Action] = Field(
+        ..., title="Actions", description="The list of actions."
     )
 
 prompt_template_paths = {
@@ -44,7 +44,7 @@ class LLMEngine:
         # Load the work prompt template.
         work_prompt_template = PromptTemplate.from_file(prompt_template_paths["plan"])
         work_prompt = work_prompt_template.format(
-            agent_observations=json.dumps(agent_observations, indent=2),
+            agent_observations=self.__observations_to_text(agent_observations),
             user_instructions=user_instructions
         )
 
@@ -72,9 +72,36 @@ class LLMEngine:
         data = json.loads(data)
         print(json.dumps(data, indent=2))
 
-
         return plan
-    
+
+
+    def __observations_to_text(self, observations):
+        text = ""
+
+        # The position of the agent.
+        agent_x = observations["me"]["x"]
+        agent_y = observations["me"]["y"]
+        agent_position_string = f"({agent_x}, {agent_y})"
+        text += f"- You are at position ({agent_position_string}).\n"
+
+        # The elements that the agent sees.
+        for cell in observations["cells"]:
+            x = cell["x"]
+            y = cell["y"]
+            position_str = f"({x}, {y})"
+
+            elements = cell["elements"]
+            if isinstance(elements, list) and position_str != agent_position_string:
+                elements = ", ".join(elements)
+                text += f"- You see these elements at position {position_str}: {elements}.\n"
+            elif isinstance(elements, list) and position_str == agent_position_string:
+                elements = ", ".join(elements)
+                text += f"- You are standing on these elements: {elements}.\n"
+            elif elements == "empty" and position_str == agent_position_string:
+                text += f"- You are standing on an empty cell.\n"
+
+        text += f"- If you do not see any elements, the cell is empty.\n"
+        return text
 
     def __log_messages(self, messages):
 

@@ -150,6 +150,10 @@ class Simulation:
         return agent_id
 
 
+    def get_step(self):
+        return self.simulation_step
+
+
     def get_agents(self):
         return list(self.agents.values())
 
@@ -166,6 +170,18 @@ class Simulation:
         assert agent_id in self.agents, f"Invalid agent id: {agent_id}"
         agent = self.agents.get(agent_id)
         return agent.observations
+    
+
+    def get_agent_score(self, agent_id):
+        assert agent_id in self.agents, f"Invalid agent id: {agent_id}"
+        agent = self.agents.get(agent_id)
+        return agent.score
+
+
+    def get_agent_inventory(self, agent_id):
+        assert agent_id in self.agents, f"Invalid agent id: {agent_id}"
+        agent = self.agents.get(agent_id)
+        return agent.inventory
 
 
     def step(self):
