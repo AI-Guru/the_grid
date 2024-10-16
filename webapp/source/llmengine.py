@@ -1,4 +1,6 @@
 import os
+import json
+from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import PromptTemplate
@@ -21,8 +23,8 @@ class Plan(BaseModel):
     )
 
 prompt_template_paths = {
-    "system": "prompts/system.json",
-    "plan": "prompts/plan.json",
+    "system": "prompts/system.txt",
+    "plan": "prompts/plan.txt",
 }
 
 
@@ -33,21 +35,18 @@ class LLMEngine:
         self.llm_name = llm_name
         self.temperature = temperature
 
-    def generate_plan(self, simulation, instructions):
-        """
-        Generate a plan for the simulation.
-        :param simulation: The simulation.
-        :param instructions: The instructions.
-        :return: The plan.
-        """
+    def generate_plan(self, agent_observations, user_instructions):
 
         # Load the system prompt template.
         system_prompt_template = PromptTemplate.from_file(prompt_template_paths["system"])
         system_prompt = system_prompt_template.format()
 
         # Load the work prompt template.
-        work_prompt_template = PromptTemplate.load(prompt_template_paths["plan"])
-        work_prompt = work_prompt_template.format(instructions=instructions)
+        work_prompt_template = PromptTemplate.from_file(prompt_template_paths["plan"])
+        work_prompt = work_prompt_template.format(
+            agent_observations=json.dumps(agent_observations, indent=2),
+            user_instructions=user_instructions
+        )
 
         # Parse the instructions.
         pydantic_parser = PydanticOutputParser(pydantic_object=Plan)
@@ -63,12 +62,35 @@ class LLMEngine:
         # Get the model and invoke it.
         llm = self.__get_model(self.llm_provider, self.llm_name, temperature=self.temperature)
         response = llm.invoke(messages)
+        messages += [("assistant", response)]
+        self.__log_messages(messages)
         plan = pydantic_parser.invoke(response)
 
+
+        # Print the plan as a JSON string.
+        data = plan.model_dump_json()
+        data = json.loads(data)
+        print(json.dumps(data, indent=2))
+
+
         return plan
+    
+
+    def __log_messages(self, messages):
+
+        messages_path = "output/messages.md"
+
+        # Append the messages to the file.
+        with open(messages_path, "a") as file:
+
+            # Add the timestamp.
+            file.write(f"# {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+            for role, message in messages:
+                file.write(f"## {role.upper()}\n\n{message}\n\n")
 
 
-    def __get_model(model_provider, model_name, temperature=0.5):
+    def __get_model(self, model_provider, model_name, temperature=0.5):
         """
         Get a model.
         :param model_provider: The model provider.

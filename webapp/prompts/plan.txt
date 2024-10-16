@@ -1,0 +1,18 @@
+Here is the description of the grid:
+
+```
+{agent_observations}
+```
+
+Here are the user instructions:
+
+```
+{user_instructions}
+```
+
+Please generate a plan that would follow the user instructions.
+
+Please:
+- Only reply with a plan.
+- Keep in mind that the plan will be executed sequentially.
+- Have the right order of actions. 

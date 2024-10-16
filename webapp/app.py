@@ -24,6 +24,9 @@ class GradioApp:
         assert os.path.exists(simulation_config_path), f"Simulation file not found: {simulation_config_path}"
         self.simulation = Simulation(simulation_config_path)  # Create an instance of the Simulation class
 
+        # Do one step to initialize the simulation.
+        self.simulation.step()
+
         sprite_sheet_path = "../simulation/static/spritesheet.png"
         self.simulation_renderer = SimulationRenderer(
             sprite_sheet_path=sprite_sheet_path,
@@ -133,7 +136,11 @@ class GradioApp:
 
         llm_engine = LLMEngine("openai", "gpt-4o", temperature=0.5)
 
-        plan = llm_engine.generate_plan(self.simulation, instructions)
+        agents = self.simulation.get_agents()
+        agent = agents[0]
+        agent_id = agent.id
+        agent_observations = self.simulation.get_agent_observations(agent_id)
+        plan = llm_engine.generate_plan(agent_observations, instructions)
 
 
 
