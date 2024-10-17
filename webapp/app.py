@@ -77,7 +77,6 @@ class GradioApp:
                     instructions_textbox = elements["instructions_textbox"]
                     plan_textbox = elements["plan_textbox"]
                     run_button = elements["run_button"]
-                    image_html = elements["image_html"]
                     steps_textbox = elements["steps_textbox"]
                     score_textbox = elements["score_textbox"]
                     inventory_textbox = elements["inventory_textbox"]
@@ -120,6 +119,7 @@ class GradioApp:
 
             # The textbox for instructions, the one for the plan, and the run button.
             with gr.Column():
+                _ = gr.Markdown("## The Grid")
                 instructions_textbox = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab.", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
                 plan_textbox = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
                 run_button = gr.Button("Run")
@@ -129,8 +129,8 @@ class GradioApp:
                 with gr.Row():
                     steps_textbox = gr.Markdown("## Steps: 0")
                     score_textbox = gr.Markdown("## Score: 0")
-                inventory_textbox = gr.Markdown("## ")
-                image_html = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image-dynamic" src="/static/image" width="600px" height="600px"/></div>')
+                    inventory_textbox = gr.Markdown("## ")
+                image_html = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image-dynamic" src="" width="600px" height="600px"/></div>')
 
         return {
             "instructions_textbox": instructions_textbox,
