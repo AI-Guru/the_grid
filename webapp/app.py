@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 import gradio as gr
 import uvicorn
+from fastapi import Response
 from dotenv import load_dotenv
 import sys
 sys.path.append("..")
@@ -41,7 +42,28 @@ class GradioApp:
     
     # Function to build the entire interface
     def build_interface(self):
-        with gr.Blocks() as self.demo:
+
+
+        # JavaScript code to update the image.
+        # Every second get the image base64 from the endpoint /simulation/image and update the img with id simulation-image.
+        # The server will return a base64 string. Just replace the src attribute of the img tag with the new base64 string.
+        # The server response starts with "data:image/png;base64," followed by the base64 string.
+        java_script = """
+            <script>
+                setInterval(function() {    
+                    fetch('/simulation/image')
+                    .then(response => response.text())
+                    .then(data => {
+                        var image = document.getElementById("simulation-image-dynamic");
+                        console.log(data);
+                        image.src = data;
+                    });
+
+                }, 1000);
+            </script>
+        """
+            
+        with gr.Blocks(head=java_script) as self.demo:
             with gr.Tabs() as self.tabs:
                 
                 # A tab for the title.
@@ -71,7 +93,6 @@ class GradioApp:
                 self.handle_run_button_click,
                 inputs=[instructions_textbox],
                 outputs=[
-                    image_html,
                     plan_textbox,
                     steps_textbox,
                     score_textbox,
@@ -109,7 +130,7 @@ class GradioApp:
                     steps_textbox = gr.Markdown("## Steps: 0")
                     score_textbox = gr.Markdown("## Score: 0")
                 inventory_textbox = gr.Markdown("## ")
-                image_html = gr.HTML(self.__image_html_string())
+                image_html = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image-dynamic" src="/static/image" width="600px" height="600px"/></div>')
 
         return {
             "instructions_textbox": instructions_textbox,
@@ -172,7 +193,7 @@ class GradioApp:
         score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
         inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
         inventory_textbox = gr.Markdown(f"## {inventory_string}")
-        yield image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
+        yield plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
         # TODO: Remove this.
         #return image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
@@ -188,9 +209,8 @@ class GradioApp:
             steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
             score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
             inventory_textbox = gr.Markdown(f"## {inventory_string}")
-            yield image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
+            yield plan_textbox, steps_textbox, score_textbox, inventory_textbox
             time.sleep(1)
-
 
     # Function to render the High Score tab
     def render_highscore_tab(self):
@@ -201,6 +221,12 @@ class GradioApp:
 
 # FastAPI and Gradio integration
 fast_api_app = FastAPI()
+
+# Endpoint to get the image.
+@fast_api_app.get("/simulation/image")
+def get_simulation_image():
+    return Response(content=gradio_app.environment_image_base64, media_type="text/plain")
+    return gradio_app.environment_image_base64
 
 # Serve static files
 fast_api_app.mount("/static", StaticFiles(directory="static"), name="static")
