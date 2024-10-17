@@ -92,12 +92,9 @@ class LLMEngine:
         plan = pydantic_parser.invoke(response)
         for action in plan.actions:
             assert isinstance(action, GotoAction) or isinstance(action, ManipulateAction)
-            print(f"Action: {action}")
   
+        # Return the actions.
         actions = self.__plan_to_actions(plan, agent_observations)
-
-
-        # Print the plan as a JSON string.
         return actions
 
 
@@ -134,7 +131,6 @@ class LLMEngine:
                     text += f"- There is {element} at {position_str}.\n"
 
         # Done.
-        print(f"Observations:\n{text}")
         return text
     
 
@@ -159,9 +155,7 @@ class LLMEngine:
                 start_y = plan_action.start_y
                 end_x = plan_action.end_x
                 end_y = plan_action.end_y
-                print(f"Finding path from {start_x}, {start_y} to {end_x}, {end_y} with obstacles {obstacle_positions}")
                 path, _ = find_route(start_x, start_y, end_x, end_y, obstacle_positions)
-                print(f"Path: {path}")
                 if path is None:
                     raise ValueError(f"Could not find a path from {start_x}, {start_y} to {end_x}, {end_y}.")
                 for (x1, y1), (x2, y2) in zip(path[:-1], path[1:]):
@@ -190,7 +184,6 @@ class LLMEngine:
         # Check the actions. If they are okay, return them.
         for action in actions:
             assert action in ["up", "down", "left", "right", "pickup", "drop"]
-        print(f"Actions: {actions}")
         return actions
     
 

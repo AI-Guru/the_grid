@@ -18,8 +18,10 @@ load_dotenv(override=True)
 class GradioApp:
 
     def __init__(self):
-        self.demo = None  # This will hold the Gradio Blocks
-        self.tabs = None  # This will hold the Gradio Tabs
+
+        # Gradio blocks and tabs.
+        self.demo = None
+        self.tabs = None
 
         # Create the simulation.
         simulation_config_path = "../simulation/simulations/simulation.json"
@@ -49,7 +51,6 @@ class GradioApp:
 
                 # A tab for the game.
                 with gr.Tab("Game", id=1):
-                    # Render Game tab content
                     elements = self.render_game_tab()
                     instructions_textbox = elements["instructions_textbox"]
                     plan_textbox = elements["plan_textbox"]
@@ -58,7 +59,6 @@ class GradioApp:
                     steps_textbox = elements["steps_textbox"]
                     score_textbox = elements["score_textbox"]
                     inventory_textbox = elements["inventory_textbox"]
-
                     self.instructions_textbox = instructions_textbox
 
                 # A tab for the high score.
@@ -66,16 +66,7 @@ class GradioApp:
                     # Render High Score tab content
                     back_to_title_button = self.render_highscore_tab()
 
-            # When the start button is clicked, switch to the "Game" tab
-            #start_button.click(self.change_tab, inputs=[gr.State(1)], outputs=self.tabs)
-
-            # When the highscore button is clicked, switch to the "High Score" tab
-            #highscore_button.click(self.change_tab, inputs=[gr.State(2)], outputs=self.tabs)
-
-            # When the back button in the high score tab is clicked, switch back to the "Title" tab
-            back_to_title_button.click(self.change_tab, inputs=[gr.State(0)], outputs=self.tabs)
-
-            #
+            # The run button click handler.
             run_button.click(
                 self.handle_run_button_click,
                 inputs=[instructions_textbox],
@@ -103,9 +94,6 @@ class GradioApp:
 
     # Function to render the Game tab
     def render_game_tab(self):
-        gr.Markdown("### Game")
-        #back_button = gr.Button("Back to Title")
-
         # Buttons for simulation actions
         with gr.Row():
 
@@ -135,16 +123,13 @@ class GradioApp:
     
 
     def __image_html_string(self):
-        return f'<div id="image-container"><img id="simulation-image" src="{self.environment_image_base64}" width="600px"/></div>'
+        return f'<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image" src="{self.environment_image_base64}" width="600px" height="600px"/></div>'
     
-
+    # Function to handle the run button click
     def handle_run_button_click(self, instructions_textbox):
         instructions = instructions_textbox
-        print(instructions)
 
-        # Get the model.
-        #llm = get_model("openai", "gpt-4o", temperature=0.5)
-
+        # Get the LLM engine.
         llm_engine = LLMEngine("openai", "gpt-4o", temperature=0.5)
 
         # Get the agent.
@@ -160,7 +145,7 @@ class GradioApp:
             assert isinstance(action, str), f"Invalid action: {action}"
             assert action in ["left", "right", "up", "down", "pickup", "drop"], f"Invalid action: {action}"
 
-
+        # Method to convert actions to string.
         def actions_to_string(actions, current_action_index=-1):
             actions_string_list = []
             for i, action in enumerate(actions):
@@ -170,6 +155,7 @@ class GradioApp:
                     actions_string_list.append(action.lower())
             return ", ".join(actions_string_list)
         
+        # Method to convert inventory to string.
         def inventory_to_string(inventory):
             inventory_items = []
             for item in inventory:
@@ -191,7 +177,7 @@ class GradioApp:
         # TODO: Remove this.
         #return image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
-        # Execute the plan.
+        # Execute the plan. Update the UI after each step.
         for action_index, action in enumerate(actions):
             self.simulation.add_action(agent_id, {"action": action})
             self.simulation.step()
