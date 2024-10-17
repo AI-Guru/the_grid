@@ -1,5 +1,5 @@
 import os
-from PIL import Image
+from PIL import Image, ImageDraw
 
 class SimulationRenderer:
     
@@ -52,6 +52,11 @@ class SimulationRenderer:
             x = cell['x'] * self.sprite_size * self.scale
             y = (grid_height - cell['y'] - 1) * self.sprite_size * self.scale
             grid_image.paste(sprite, (x, y), sprite)  # Use sprite as the mask to handle transparency
+
+            # Draw coordinates for debugging.
+            draw = ImageDraw.Draw(grid_image)
+            draw.text((x, y), f"{cell['x']}, {cell['y']}", (255, 255, 255), font_size=40)
+
 
         # Save the image to a file with transparency (RGBA)
         output_path = os.path.join(self.output_dir, 'grid_render.png')

@@ -273,7 +273,7 @@ class Simulation:
             entities = self.grid.get_entities_at(agent.x, agent.y)
             item = None
             for entity in entities:
-                if isinstance(entity, Item):
+                if isinstance(entity, Item) and entity.name in ["gold"]:
                     item = entity
                     break
             if item is not None:

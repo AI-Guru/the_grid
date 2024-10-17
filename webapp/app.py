@@ -110,7 +110,7 @@ class GradioApp:
 
             # The textbox for instructions, the one for the plan, and the run button.
             with gr.Column():
-                instructions_textbox = gr.Textbox("Gehe drei Felder runter", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
+                instructions_textbox = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab.", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
                 plan_textbox = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
                 run_button = gr.Button("Run")
 
@@ -152,16 +152,21 @@ class GradioApp:
         agent_observations = self.simulation.get_agent_observations(agent_id)
         
         # Generate a plan.
-        plan = llm_engine.generate_plan(agent_observations, instructions)
+        actions = llm_engine.generate_plan(agent_observations, instructions)
+        assert isinstance(actions, list), f"Invalid actions: {actions}"
+        for action in actions:
+            assert isinstance(action, str), f"Invalid action: {action}"
+            assert action in ["left", "right", "up", "down", "pickup", "drop"], f"Invalid action: {action}"
 
-        def plan_to_string(plan, current_action_index):
-            plan_string = ""
-            for i, action in enumerate(plan.actions):
+
+        def actions_to_string(actions, current_action_index=-1):
+            actions_string_list = []
+            for i, action in enumerate(actions):
                 if i == current_action_index:
-                    plan_string += f"> {action}\n"
+                    actions_string_list.append(action.upper())  
                 else:
-                    plan_string += f"- {action}\n"
-            return plan_string
+                    actions_string_list.append(action.lower())
+            return ", ".join(actions_string_list)
         
         def inventory_to_string(inventory):
             inventory_items = []
@@ -171,22 +176,23 @@ class GradioApp:
         
         # We have a plan. Update the UI.
         image_html = self.get_image_html()
-        plan_textbox = plan_to_string(plan, -1)
+        plan_textbox = actions_to_string(actions, -1)
         steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
         score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
         inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
         inventory_textbox = gr.Markdown(f"## Inventory: {inventory_string}")
         yield image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
+        # TODO: Remove this.
+        #return image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
+
         # Execute the plan.
-        for action_index, action in enumerate(plan.actions):
-            action_reason = action.reason
-            action = action.action
+        for action_index, action in enumerate(actions):
             self.simulation.add_action(agent_id, {"action": action})
             self.simulation.step()
             self.simulation_renderer.render(self.simulation.get_renderer_data())
             image_html = self.get_image_html()
-            plan_textbox = plan_to_string(plan, action_index)
+            plan_textbox = actions_to_string(actions, action_index)
             inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
             steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
             score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
