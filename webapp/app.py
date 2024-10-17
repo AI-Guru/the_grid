@@ -16,6 +16,7 @@ load_dotenv(override=True)
 
 # Define the Gradio App as a class
 class GradioApp:
+
     def __init__(self):
         self.demo = None  # This will hold the Gradio Blocks
         self.tabs = None  # This will hold the Gradio Tabs
@@ -34,7 +35,7 @@ class GradioApp:
 
         # Do one step to initialize the simulation.
         self.simulation.step()
-        self.simulation_renderer.render(self.simulation.get_renderer_data())
+        self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
     
     # Function to build the entire interface
     def build_interface(self):
@@ -116,11 +117,7 @@ class GradioApp:
 
             # Custom HTML for dynamic image update.
             with gr.Column():
-                image_html = gr.HTML('''
-                    <div id="image-container">
-                        <img id="simulation-image" src="/static/grid_render.png" width="600px" />
-                    </div>
-                ''')
+                image_html = gr.HTML(self.__image_html_string())
                 with gr.Row():
                     steps_textbox = gr.Markdown("## Steps: 0")
                     score_textbox = gr.Markdown("## Score: 0")
@@ -135,6 +132,9 @@ class GradioApp:
             "score_textbox": score_textbox,
             "inventory_textbox": inventory_textbox
         }
+    
+    def __image_html_string(self):
+        return f'<div id="image-container"><img id="simulation-image" src="{self.environment_image_base64}" width="600px"/></div>'
     
     def handle_run_button_click(self, instructions_textbox):
         instructions = instructions_textbox
@@ -175,7 +175,7 @@ class GradioApp:
             return ", ".join(inventory_items)
         
         # We have a plan. Update the UI.
-        image_html = self.get_image_html()
+        image_html = self.__image_html_string()
         plan_textbox = actions_to_string(actions, -1)
         steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
         score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
@@ -190,8 +190,8 @@ class GradioApp:
         for action_index, action in enumerate(actions):
             self.simulation.add_action(agent_id, {"action": action})
             self.simulation.step()
-            self.simulation_renderer.render(self.simulation.get_renderer_data())
-            image_html = self.get_image_html()
+            self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
+            image_html = self.__image_html_string()
             plan_textbox = actions_to_string(actions, action_index)
             inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
             steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
@@ -200,38 +200,6 @@ class GradioApp:
             yield image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
             time.sleep(3)
 
-
-    def get_image_html(self):
-        timestamped_path = f"/static/grid_render.png?{int(time.time())}"
-        return f'''
-        <div id="image-container">
-            <img id="simulation-image" src="{timestamped_path}" width="600px" />
-        </div>
-        '''
-
-
-
-    def execute_simulation_action(self, action):
-        assert action in ["left", "right", "up", "down", "pickup", "drop"], f"Invalid action: {action}"
-
-        # Perform the simulation action
-        agents = self.simulation.get_agents()
-        agent = agents[0]
-        agent_id = agent.id
-        self.simulation.add_action(agent_id, {"action": action})
-        self.simulation.step()
-        
-
-        # Update the image path with a timestamp to force reload
-        new_image_path = self.simulation_renderer.render(self.simulation.get_renderer_data())
-        timestamped_path = f"/static/grid_render.png?{int(time.time())}"
-
-        # Update the custom HTML element with the new image
-        return f'''
-        <div id="image-container">
-            <img id="simulation-image" src="{timestamped_path}" width="600px" />
-        </div>
-        '''
 
     # Function to render the High Score tab
     def render_highscore_tab(self):

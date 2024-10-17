@@ -1,5 +1,8 @@
 import os
 from PIL import Image, ImageDraw
+from io import BytesIO
+import base64
+
 
 class SimulationRenderer:
     
@@ -34,7 +37,7 @@ class SimulationRenderer:
         else:
             raise ValueError(f"Unknown sprite: {sprite_name}")
 
-    def render(self, render_data):
+    def render(self, render_data, return_base64=False):
         """Render the grid based on the input render_data and save it as a PNG file."""
         grid_width = render_data['grid_width']
         grid_height = render_data['grid_height']
@@ -61,5 +64,12 @@ class SimulationRenderer:
         # Save the image to a file with transparency (RGBA)
         output_path = os.path.join(self.output_dir, 'grid_render.png')
         grid_image.save(output_path, 'PNG')
+
+        # Return as base64 encoded string for display in web app. Should work as src for img tag.
+        if return_base64:
+            buffered = BytesIO()
+            grid_image.save(buffered, format="PNG")
+            image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            return f"data:image/png;base64,{image_base64}"
 
         return output_path
