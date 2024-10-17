@@ -117,11 +117,11 @@ class GradioApp:
 
             # Custom HTML for dynamic image update.
             with gr.Column():
-                image_html = gr.HTML(self.__image_html_string())
                 with gr.Row():
                     steps_textbox = gr.Markdown("## Steps: 0")
                     score_textbox = gr.Markdown("## Score: 0")
-                    inventory_textbox = gr.Markdown("## Inventory: Empty")
+                inventory_textbox = gr.Markdown("## ")
+                image_html = gr.HTML(self.__image_html_string())
 
         return {
             "instructions_textbox": instructions_textbox,
@@ -133,9 +133,11 @@ class GradioApp:
             "inventory_textbox": inventory_textbox
         }
     
+
     def __image_html_string(self):
         return f'<div id="image-container"><img id="simulation-image" src="{self.environment_image_base64}" width="600px"/></div>'
     
+
     def handle_run_button_click(self, instructions_textbox):
         instructions = instructions_textbox
         print(instructions)
@@ -171,8 +173,11 @@ class GradioApp:
         def inventory_to_string(inventory):
             inventory_items = []
             for item in inventory:
-                inventory_items.append(item.name)
-            return ", ".join(inventory_items)
+                if item.name == "gold":
+                    inventory_items.append("🟡")
+                else:
+                    raise ValueError(f"Unknown item: {item.name}")
+            return "".join(inventory_items)
         
         # We have a plan. Update the UI.
         image_html = self.__image_html_string()
@@ -180,7 +185,7 @@ class GradioApp:
         steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
         score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
         inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
-        inventory_textbox = gr.Markdown(f"## Inventory: {inventory_string}")
+        inventory_textbox = gr.Markdown(f"## {inventory_string}")
         yield image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
         # TODO: Remove this.
@@ -196,9 +201,9 @@ class GradioApp:
             inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
             steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
             score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
-            inventory_textbox = gr.Markdown(f"## Inventory: {inventory_string}")
+            inventory_textbox = gr.Markdown(f"## {inventory_string}")
             yield image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
-            time.sleep(3)
+            time.sleep(1)
 
 
     # Function to render the High Score tab
