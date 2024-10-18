@@ -88,7 +88,15 @@ class Simulation:
             raise ValueError("Invalid 'agents' value in simulation config")
 
 
-    def get_renderer_data(self):
+    def get_renderer_data(self, version="v1"):
+        if version == "v1":
+            return self.get_renderer_data_v1()
+        elif version == "v2":
+            return self.get_renderer_data_v2()
+        else:
+            raise ValueError("Invalid version")
+
+    def get_renderer_data_v1(self):
         grid_cells = []
 
         grid_width = self.grid.width

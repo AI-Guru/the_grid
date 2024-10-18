@@ -2,6 +2,7 @@ import os
 from PIL import Image, ImageDraw
 from io import BytesIO
 import base64
+from .spritepool import SpritePool
 
 
 class SimulationRenderer:
@@ -26,6 +27,10 @@ class SimulationRenderer:
         # Create output directory if it doesn't exist
         os.makedirs(self.output_dir, exist_ok=True)
 
+        # Load the sprite pool configuration.
+        self.__sprite_pool = SpritePool("./assets/sprites/config.json")
+
+
     def get_sprite(self, sprite_name):
         """Return the sprite from the sprite sheet based on the sprite name."""
         if sprite_name in self.sprite_map:
@@ -38,6 +43,108 @@ class SimulationRenderer:
             raise ValueError(f"Unknown sprite: {sprite_name}")
 
     def render(self, render_data, return_base64=False):
+
+        grid_width = render_data['grid_width']
+        grid_height = render_data['grid_height']
+        grid_cells = render_data['grid_cells']
+
+        sprite_size = 16
+        scale = 8
+
+        # Create an empty RGBA image for the grid with transparency support
+        image_width = grid_width * sprite_size
+        image_height = grid_height * sprite_size
+        grid_image = Image.new('RGBA', (image_width, image_height), (0, 0, 0, 0))
+
+        # Draw the floor.
+        for cell in grid_cells:
+            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite("floor")
+            x = cell['x'] * sprite_size + offset_x
+            y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
+            grid_image.paste(sprite, (x, y), sprite)
+
+        # Make a 2d wall grid.
+        walls = [[False for _ in range(grid_width)] for _ in range(grid_height)]
+        for cell in grid_cells:
+            if cell['sprite'] == "wall":
+                walls[cell['y']][cell['x']] = True
+
+        offsets = [
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+            (1, 0),
+            (1, -1),
+            (0, -1),
+            (-1, -1),
+            (-1, 0),
+        ]
+
+        def determine_wall_type(walls, x, y):
+            wall_type = ""
+            for offset_x, offset_y in offsets:
+                new_x = x + offset_x
+                new_y = y + offset_y
+                if new_x >= 0 and new_x < grid_width and new_y >= 0 and new_y < grid_height:
+                    wall_type += "W" if walls[new_y][new_x] else "E"
+                else:
+                    wall_type += "W"
+            return wall_type
+
+        # Render the walls.
+        for y in range(grid_height):
+            for x in range(grid_width):
+                
+                # The candidate must be a wall.
+                if walls[y][x]:
+                    
+                    # See if any of the wall render rules apply.
+                    wall_type = determine_wall_type(walls, x, y)
+                    wall_sprite = "wall_" + wall_type
+                    print(wall_type, x, y)
+                    if self.__sprite_pool.has_sprite(wall_sprite):
+                        sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(wall_sprite)
+                    else:
+                        sprite, offset_x, offset_y = self.__sprite_pool.get_sprite("unknown")
+                    render_x = x * sprite_size + offset_x
+                    render_y = (grid_height - y - 1) * sprite_size + offset_y
+                    grid_image.paste(sprite, (render_x, render_y), sprite)
+
+
+        sprite_order = ["gold", "trove", "red"]
+        for sprite_name in sprite_order:
+            for cell in grid_cells:
+                if cell['sprite'] == sprite_name:
+                    sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite_name)
+                    x = cell['x'] * sprite_size + offset_x
+                    y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
+                    grid_image.paste(sprite, (x, y), sprite)
+
+        # Draw the walls.
+        #for cell in grid_cells:
+        #    if cell['sprite'] != "empty":
+        #        sprite = self.__sprite_pool.get_sprite(cell['sprite'])
+        #        x = cell['x'] * sprite_size
+        #        y = (grid_height - cell['y'] - 1) * sprite_size
+        #        grid_image.paste(sprite, (x, y), sprite)
+
+        # Scale image with nearest neighbor interpolation.
+        image_width *= scale
+        image_height *= scale
+        grid_image = grid_image.resize((image_width, image_height), Image.NEAREST)
+
+        # Return as base64 encoded string for display in web app. Should work as src for img tag.
+        if return_base64:
+            buffered = BytesIO()
+            grid_image.save(buffered, format="PNG")
+            image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
+            return f"data:image/png;base64,{image_base64}"
+        else:
+            assert False, "Not implemented yet"
+            return output_path
+
+
+    def render_old(self, render_data, return_base64=False):
         """Render the grid based on the input render_data and save it as a PNG file."""
         grid_width = render_data['grid_width']
         grid_height = render_data['grid_height']
@@ -71,5 +178,5 @@ class SimulationRenderer:
             grid_image.save(buffered, format="PNG")
             image_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
             return f"data:image/png;base64,{image_base64}"
-
-        return output_path
+        else:
+            return output_path
