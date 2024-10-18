@@ -156,34 +156,45 @@ class LLMEngine:
                 end_x = plan_action.end_x
                 end_y = plan_action.end_y
                 path, _ = find_route(start_x, start_y, end_x, end_y, obstacle_positions)
+                actions.append({"path": path})
                 if path is None:
                     raise ValueError(f"Could not find a path from {start_x}, {start_y} to {end_x}, {end_y}.")
                 for (x1, y1), (x2, y2) in zip(path[:-1], path[1:]):
                     if x1 == x2 and y1 == y2 - 1:
-                        actions.append("up")
+                        actions.append({"action": "up"})
                     elif x1 == x2 and y1 == y2 + 1:
-                        actions.append("down")
+                        actions.append({"action": "down"})
                     elif x1 == x2 - 1 and y1 == y2:
-                        actions.append("right")
+                        actions.append({"action": "right"})
                     elif x1 == x2 + 1 and y1 == y2:
-                        actions.append("left")
+                        actions.append({"action": "left"})
                     else:
                         raise ValueError(f"Invalid path from {x1}, {y1} to {x2}, {y2}.")
 
             # Add the manipulate actions.
             elif isinstance(plan_action, ManipulateAction):
                 if plan_action.action == "pickup":
-                    actions.append("pickup")
+                    actions.append({"action": "pickup"})
                 elif plan_action.action == "drop":
-                    actions.append("drop")
+                    actions.append({"action": "drop"})
             
             # Invalid action.
             else:
                 raise ValueError(f"Invalid action: {plan_action}.")
 
+        actions.append({"done": True})
+
         # Check the actions. If they are okay, return them.
         for action in actions:
-            assert action in ["up", "down", "left", "right", "pickup", "drop"]
+            if isinstance(action, dict):
+                if "action" in action:
+                    assert action["action"] in ["up", "down", "left", "right", "pickup", "drop"]
+                elif "path" in action:
+                    pass
+                elif "done" in action:
+                    pass
+                else:
+                    raise ValueError(f"Invalid action: {action}.")
         return actions
     
 

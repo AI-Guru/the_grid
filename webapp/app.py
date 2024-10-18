@@ -130,7 +130,7 @@ class GradioApp:
                     steps_textbox = gr.Markdown("## Steps: 0")
                     score_textbox = gr.Markdown("## Score: 0")
                     inventory_textbox = gr.Markdown("## ")
-                image_html = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image-dynamic" src="" width="600px" height="600px"/></div>')
+                image_html = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:rgb(36 19 26);"><img id="simulation-image-dynamic" src="" width="600px" height="600px"/></div>')
 
         return {
             "instructions_textbox": instructions_textbox,
@@ -163,13 +163,16 @@ class GradioApp:
         actions = llm_engine.generate_plan(agent_observations, instructions)
         assert isinstance(actions, list), f"Invalid actions: {actions}"
         for action in actions:
-            assert isinstance(action, str), f"Invalid action: {action}"
-            assert action in ["left", "right", "up", "down", "pickup", "drop"], f"Invalid action: {action}"
+            assert isinstance(action, dict), f"Invalid action: {action}"
 
         # Method to convert actions to string.
         def actions_to_string(actions, current_action_index=-1):
             actions_string_list = []
             for i, action in enumerate(actions):
+                assert isinstance(action, dict), f"Invalid action: {action}"
+                if "action" not in action:
+                    continue
+                action = action["action"]
                 if i == current_action_index:
                     actions_string_list.append(action.upper())  
                 else:
@@ -186,31 +189,40 @@ class GradioApp:
                     raise ValueError(f"Unknown item: {item.name}")
             return "".join(inventory_items)
         
+        def compile_yield_values():
+            plan_textbox = actions_to_string(actions, -1)
+            steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
+            score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
+            inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
+            inventory_textbox = gr.Markdown(f"## {inventory_string}")
+            return plan_textbox, steps_textbox, score_textbox, inventory_textbox
+
         # We have a plan. Update the UI.
-        image_html = self.__image_html_string()
-        plan_textbox = actions_to_string(actions, -1)
-        steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
-        score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
-        inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
-        inventory_textbox = gr.Markdown(f"## {inventory_string}")
-        yield plan_textbox, steps_textbox, score_textbox, inventory_textbox
+        yield compile_yield_values()
 
         # TODO: Remove this.
         #return image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
         # Execute the plan. Update the UI after each step.
         for action_index, action in enumerate(actions):
-            self.simulation.add_action(agent_id, {"action": action})
-            self.simulation.step()
-            self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
-            image_html = self.__image_html_string()
-            plan_textbox = actions_to_string(actions, action_index)
-            inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
-            steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
-            score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
-            inventory_textbox = gr.Markdown(f"## {inventory_string}")
-            yield plan_textbox, steps_textbox, score_textbox, inventory_textbox
-            time.sleep(1)
+            # Execute the action.
+            if "action" in action:
+                self.simulation.add_action(agent_id, action)
+                self.simulation.step()
+                self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
+                yield compile_yield_values()
+                time.sleep(1)
+            elif "path" in action:
+                #self.simulation.step()
+                path = action["path"]
+                self.simulation_renderer.set_path(path)
+                self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
+                yield compile_yield_values()
+                time.sleep(1)
+            elif "done" in action:
+                break
+            else:
+                raise ValueError(f"Invalid action: {action}")
 
     # Function to render the High Score tab
     def render_highscore_tab(self):

@@ -14,21 +14,24 @@ class SimulationRenderer:
         self.output_dir = output_dir  # Directory to save the PNG files
 
         # Map each sprite type to its position in the sprite sheet (x, y)
-        self.sprite_map = {
-            'empty': (1, 0),
-            'red': (2, 0),
-            'blue': (3, 0),
-            'wall': (4, 0),
-            'gold': (0, 0),
-            'trove': (0, 1),
-            'wumpus': (1, 1),
-        }
+        #self.sprite_map = {
+        #    'empty': (1, 0),
+        #    'red': (2, 0),
+        #    'blue': (3, 0),
+        #    'wall': (4, 0),
+        #    'gold': (0, 0),
+        #    'trove': (0, 1),
+        #    'wumpus': (1, 1),
+       # }
 
         # Create output directory if it doesn't exist
         os.makedirs(self.output_dir, exist_ok=True)
 
         # Load the sprite pool configuration.
         self.__sprite_pool = SpritePool("./assets/sprites/config.json")
+
+        #
+        self.__path = None
 
 
     def get_sprite(self, sprite_name):
@@ -41,6 +44,9 @@ class SimulationRenderer:
             return sprite.resize((self.sprite_size * self.scale, self.sprite_size * self.scale), Image.NEAREST)
         else:
             raise ValueError(f"Unknown sprite: {sprite_name}")
+
+    def set_path(self, path):
+        self.__path = path
 
     def render(self, render_data, return_base64=False):
 
@@ -101,7 +107,6 @@ class SimulationRenderer:
                     # See if any of the wall render rules apply.
                     wall_type = determine_wall_type(walls, x, y)
                     wall_sprite = "wall_" + wall_type
-                    print(wall_type, x, y)
                     if self.__sprite_pool.has_sprite(wall_sprite):
                         sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(wall_sprite)
                     else:
@@ -111,7 +116,8 @@ class SimulationRenderer:
                     grid_image.paste(sprite, (render_x, render_y), sprite)
 
 
-        sprite_order = ["gold", "trove", "red"]
+        # Draw the sprites.
+        sprite_order = ["gold", "trove"]
         for sprite_name in sprite_order:
             for cell in grid_cells:
                 if cell['sprite'] == sprite_name:
@@ -120,13 +126,39 @@ class SimulationRenderer:
                     y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
                     grid_image.paste(sprite, (x, y), sprite)
 
-        # Draw the walls.
-        #for cell in grid_cells:
-        #    if cell['sprite'] != "empty":
-        #        sprite = self.__sprite_pool.get_sprite(cell['sprite'])
-        #        x = cell['x'] * sprite_size
-        #        y = (grid_height - cell['y'] - 1) * sprite_size
-        #        grid_image.paste(sprite, (x, y), sprite)
+        # Draw the path.
+        if self.__path is not None:
+
+            # Load the path sprite.
+            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite("path")
+
+            # Multiply the sprites alpha channel with 0.5 to make it semi-transparent.
+            sprite = sprite.convert("RGBA")
+            data = sprite.getdata()
+            new_data = []
+            for item in data:
+                item_0 = int(item[0] * 1.0)
+                item_1 = int(item[1] * 1)
+                item_2 = int(item[2] * 1)
+                item_3 = int(item[3] * 0.5)
+                new_data.append((item_0, item_1, item_2, item_3))
+            sprite.putdata(new_data)
+            
+            # Draw the path.
+            for x, y in self.__path:
+                x = x * sprite_size + offset_x
+                y = (grid_height - y - 1) * sprite_size + offset_y
+                grid_image.paste(sprite, (x, y), sprite)
+
+        # Draw the agent.
+        sprite_order = ["red"]
+        for sprite_name in sprite_order:
+            for cell in grid_cells:
+                if cell['sprite'] == sprite_name:
+                    sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite_name)
+                    x = cell['x'] * sprite_size + offset_x
+                    y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
+                    grid_image.paste(sprite, (x, y), sprite)
 
         # Scale image with nearest neighbor interpolation.
         image_width *= scale
