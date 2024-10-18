@@ -31,10 +31,10 @@ class Simulation:
         self.raiseIfConfigInvalid(config)
 
         if config["grid"]["type"] == "custom":
-            layout = config["grid"]["layout"]
+            layout = config["grid"]["layout"][::-1]
         else:
             layout = LayoutGenerator.generate(**config["grid"]["parameters"])
-            config["grid"]["layout"] = layout
+        config["grid"]["layout"] = layout
 
         # Greate the grid.
         self.grid = Grid(config["grid"])
@@ -57,6 +57,12 @@ class Simulation:
                     entities_positions += [("trove", x, y)]
                 elif cell == "W":
                     entities_positions += [("wumpus", x, y)]
+                elif cell == "D":
+                    entities_positions += [("door", x, y)]
+                elif cell in [".", "X"]:
+                    pass
+                else:
+                    raise ValueError(f"Invalid cell type: {cell}")
                 x += 1
             y += 1
 

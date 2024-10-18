@@ -13,17 +13,6 @@ class SimulationRenderer:
         self.scale = scale  # Scaling factor for each sprite
         self.output_dir = output_dir  # Directory to save the PNG files
 
-        # Map each sprite type to its position in the sprite sheet (x, y)
-        #self.sprite_map = {
-        #    'empty': (1, 0),
-        #    'red': (2, 0),
-        #    'blue': (3, 0),
-        #    'wall': (4, 0),
-        #    'gold': (0, 0),
-        #    'trove': (0, 1),
-        #    'wumpus': (1, 1),
-       # }
-
         # Create output directory if it doesn't exist
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -110,10 +99,52 @@ class SimulationRenderer:
                     if self.__sprite_pool.has_sprite(wall_sprite):
                         sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(wall_sprite)
                     else:
+                        print(f"Unknown wall type: {wall_type}")
                         sprite, offset_x, offset_y = self.__sprite_pool.get_sprite("unknown")
                     render_x = x * sprite_size + offset_x
                     render_y = (grid_height - y - 1) * sprite_size + offset_y
                     grid_image.paste(sprite, (render_x, render_y), sprite)
+
+        def get_objects(types: list[str]):
+            assert isinstance(types, list), f"Invalid type: {types}"
+            objects = []
+
+            for cell in grid_cells:
+                x = cell['x']
+                y = cell['y']
+                sprite = cell['sprite']
+                if sprite in types:
+                    objects.append((x, y, sprite))
+
+            assert isinstance(objects, list), f"Invalid objects: {objects}"
+            for object in objects:
+                assert len(object) == 3, f"Invalid object: {object}"
+                assert isinstance(object[0], int), f"Invalid object: {object}"
+                assert isinstance(object[1], int), f"Invalid object: {object}"
+            return objects
+
+        # Draw the doors.
+        doors = get_objects(["door"])
+        print(f"Objects: {doors}")
+        for entry in doors:
+            x, y, sprite = entry
+
+            # If there is a wall to the left, use the left door sprite.
+            if x > 0 and walls[y][x - 1]:
+                sprite += "_left"
+            # If there is a wall to the right, use the right door sprite.
+            elif x < grid_width - 1 and walls[y][x + 1]:
+                sprite += "_right"
+            # Should not happen.
+            else:
+                raise ValueError(f"Invalid door position: {x}, {y}")
+            print(f"Door sprite: {sprite}")
+
+            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite)
+            render_x = x * sprite_size + offset_x
+            render_y = (grid_height - y - 1) * sprite_size + offset_y
+            grid_image.paste(sprite, (render_x, render_y), sprite)
+
 
 
         # Draw the sprites.

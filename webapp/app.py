@@ -25,7 +25,7 @@ class GradioApp:
         self.tabs = None
 
         # Create the simulation.
-        simulation_config_path = "../simulation/simulations/simulation.json"
+        simulation_config_path = "./levels/level_test.json"
         assert os.path.exists(simulation_config_path), f"Simulation file not found: {simulation_config_path}"
         self.simulation = Simulation(simulation_config_path)  # Create an instance of the Simulation class
 
@@ -36,13 +36,14 @@ class GradioApp:
             output_dir="static"
         )
 
+        self.__animation_delay = 0.2
+
         # Do one step to initialize the simulation.
         self.simulation.step()
         self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
     
     # Function to build the entire interface
     def build_interface(self):
-
 
         # JavaScript code to update the image.
         # Every second get the image base64 from the endpoint /simulation/image and update the img with id simulation-image.
@@ -120,7 +121,7 @@ class GradioApp:
             # The textbox for instructions, the one for the plan, and the run button.
             with gr.Column():
                 _ = gr.Markdown("## The Grid")
-                instructions_textbox = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab.", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
+                instructions_textbox = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab. Du kanns mehrere Goldstücke aufheben. Wenn du mehrere hast, musst du sie nacheinander ablegen.", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
                 plan_textbox = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
                 run_button = gr.Button("Run")
 
@@ -211,14 +212,14 @@ class GradioApp:
                 self.simulation.step()
                 self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
                 yield compile_yield_values()
-                time.sleep(1)
+                time.sleep(self.__animation_delay)
             elif "path" in action:
                 #self.simulation.step()
                 path = action["path"]
                 self.simulation_renderer.set_path(path)
                 self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
                 yield compile_yield_values()
-                time.sleep(1)
+                time.sleep(self.__animation_delay)
             elif "done" in action:
                 break
             else:
