@@ -55,8 +55,8 @@ class Simulation:
                     entities_positions += [("gold", x, y)]
                 elif cell == "T":
                     entities_positions += [("trove", x, y)]
-                elif cell == "W":
-                    entities_positions += [("wumpus", x, y)]
+                elif cell == "E":
+                    entities_positions += [("enemy", x, y)]
                 elif cell == "D":
                     entities_positions += [("door", x, y)]
                 elif cell in [".", "X"]:
@@ -83,7 +83,9 @@ class Simulation:
 
         # Store the triggers.
         self.triggers = config.get("triggers", [])
-        print("Triggers:", self.triggers)
+
+        # Store the exit positions.
+        self.exit_positions = config.get("exits", [])
 
         # Set the config.
         self.config = config
@@ -240,7 +242,10 @@ class Simulation:
             })
 
         # Handle the triggers.
-        self.handle_triggers()
+        events += self.handle_triggers()
+
+        # Handle the exit positions.
+        events += self.handle_exits()
 
         # Update the grid.
         self.grid.clear_entities()
@@ -257,7 +262,6 @@ class Simulation:
 
 
     def perform_agent_action(self, agent_id, action):
-        print(agent_id, action)
         assert agent_id in self.agents, f"Invalid agent id: {agent_id}, {self.agents.keys()}"
         agent = self.agents[agent_id]
 
@@ -353,12 +357,12 @@ class Simulation:
         return action_failed_cause, event
 
     def handle_triggers(self):
-        print(len(self.triggers))
-        # Example trigger: [{'type': 'remove:door', 'door_positions': [[3, 0], [4, 0]], 'when': 'no:gold'}]
+
+        # Go through all the triggers.
         new_triggers = []
         for trigger in self.triggers:
-            print(trigger)
 
+            # Get the trigger data.
             trigger_when = trigger.get("when")
             trigger_frequency = trigger.get("frequency")
             trigger_type = trigger.get("type")
@@ -368,7 +372,6 @@ class Simulation:
             if trigger_when.startswith("no:"):
                 entity_name = trigger_when.split(":")[1]
                 entities = [entity for entity in self.entities if entity.name == entity_name]
-                print(entities)
                 if len(entities) == 0:
                     triggered = True
             else:
@@ -376,35 +379,48 @@ class Simulation:
             
             if triggered:
                 print(f"Triggered: {trigger_type}")
+            else:
+                new_triggers.append(trigger)
+                continue
 
             # Handle the trigger.
-            if triggered and trigger_type.startswith("remove:"):
+            if trigger_type.startswith("remove:"):
 
                 # Get the entities and filter for the positions.
                 entity_name = trigger_type.split(":")[1]
                 entities_to_be_removed = [entity for entity in self.entities if entity.name == entity_name]
                 entities_to_be_removed = [entity for entity in entities_to_be_removed if [entity.x, entity.y] in trigger["positions"]]
-                assert len(entities_to_be_removed) == len(trigger["positions"]), f"Invalid entities to be removed: {entities_to_be_removed}"
+                assert len(entities_to_be_removed) == len(trigger["positions"]), f"Invalid entities to be removed: {entities_to_be_removed} {trigger['positions']}, {entity_name}"
 
                 # Remove the entities.
                 self.entities = [entity for entity in self.entities if entity not in entities_to_be_removed]
 
             # Should not happen.
-            elif triggered:
+            else:
                 raise ValueError(f"Invalid trigger type: {trigger_type}")
             
             # Decide if the trigger should be kept.
-            if triggered and trigger_frequency != "once":
-                new_triggers.append(trigger)
-            elif not triggered:
-                new_triggers.append(trigger)
-            elif triggered and trigger_frequency == "once":
+            if trigger_frequency == "once":
                 pass
-            elif triggered:
+            else:
                 raise ValueError(f"Invalid trigger frequency {trigger_frequency}")
 
         # Update the triggers.
         self.triggers = new_triggers
+
+        # Return the events.
+        return []
+
+    def handle_exits(self):
+
+        events = []
+        for agent in self.agents.values():
+            if [agent.x, agent.y] in self.exit_positions:
+                events.append({
+                    "type": "exit",
+                    "agent_id": agent.id,
+                })
+        return events
 
 
     def compute_agent_observations(self, agent):

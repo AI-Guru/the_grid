@@ -31,12 +31,20 @@ class SpritePool:
             x = entry["x"]
             y = entry["y"]   
 
+            # Get the optional values.
+            flip_x = entry.get("flip_x", False)
+            flip_y = entry.get("flip_y", False)
+
             # Load the file and crop the sprite.
             file = os.path.join(os.path.dirname(self.__sprite_pool_config_path), file)
             if not os.path.exists(file):
                 raise ValueError(f"Sprite file not found: {file}")
             sprite_sheet = Image.open(file).convert("RGBA")
             sprite = sprite_sheet.crop((x * tile_size, y * tile_size, (x + 1) * tile_size, (y + 1) * tile_size))
+            if flip_x:
+                sprite = sprite.transpose(Image.FLIP_LEFT_RIGHT)
+            if flip_y:
+                sprite = sprite.transpose(Image.FLIP_TOP_BOTTOM)
             self.__sprites[key] = sprite
 
             # Get the offsets.

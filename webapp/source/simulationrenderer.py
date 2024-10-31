@@ -143,8 +143,6 @@ class SimulationRenderer:
             render_y = (grid_height - y - 1) * sprite_size + offset_y
             grid_image.paste(sprite, (render_x, render_y), sprite)
 
-
-
         # Draw the sprites.
         sprite_order = ["gold", "trove"]
         for sprite_name in sprite_order:
@@ -179,15 +177,36 @@ class SimulationRenderer:
                 y = (grid_height - y - 1) * sprite_size + offset_y
                 grid_image.paste(sprite, (x, y), sprite)
 
-        # Draw the agent.
-        sprite_order = ["red"]
+        # Draw the agent and the enemies.
+        sprite_order = ["red", "enemy"]
+        cells_with_sprites = []
         for sprite_name in sprite_order:
             for cell in grid_cells:
                 if cell['sprite'] == sprite_name:
-                    sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite_name)
-                    x = cell['x'] * sprite_size + offset_x
-                    y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
-                    grid_image.paste(sprite, (x, y), sprite)
+                    cells_with_sprites.append(cell)
+                    #sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite_name)
+                    #x = cell['x'] * sprite_size + offset_x
+                    #y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
+                    #grid_image.paste(sprite, (x, y), sprite)
+        for cell in cells_with_sprites:
+            # Is there another sprite on the same cell?
+            there_is_another_sprite = False
+            for other_cell in cells_with_sprites:
+                if cell != other_cell and cell['x'] == other_cell['x'] and cell['y'] == other_cell['y']:
+                    there_is_another_sprite = True
+            if there_is_another_sprite and cell['sprite'] == "red":
+                additional_offset_x = -6
+                additional_offset_y = -2
+            elif there_is_another_sprite and cell['sprite'] == "enemy":
+                additional_offset_x = 6
+                additional_offset_y = 2
+            else:
+                additional_offset_x = 0
+                additional_offset_y = 0
+            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(cell['sprite'])
+            x = cell['x'] * sprite_size + offset_x + additional_offset_x
+            y = (grid_height - cell['y'] - 1) * sprite_size + offset_y + additional_offset_y
+            grid_image.paste(sprite, (x, y), sprite)
 
         # Scale image with nearest neighbor interpolation.
         image_width *= scale

@@ -4,16 +4,18 @@
         "layout": [
             "X X D D X X",
             "X X . . X X",
-            "X . 1 G . X",
-            "X . . . . X",
+            "X 1 . E G X",
+            "X . . . E X",
+            "X . E . G X",
             "X X X X X X"
             ]
     },
+    "exits": [[2,5], [3,5]],
     "triggers": [
         {
             "type": "remove:door",
             "frequency": "once",
-            "positions": [[2,4], [3,4]],
+            "positions": [[2,5], [3,5]],
             "when": "no:gold"
         }
     ],

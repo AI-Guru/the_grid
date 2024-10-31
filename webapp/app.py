@@ -362,7 +362,7 @@ class GradioApp:
         # Handle the events.
         for event in events:
             # If the event has out of bounds, then we go to the next level.
-            if event["action_failure_cause"] == "out_of_bounds":
+            if event["type"] == "exit":
                 self.next_level()
 
         # Update the UI.
