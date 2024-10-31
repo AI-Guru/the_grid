@@ -31,6 +31,13 @@ class GradioApp:
         # Load the level.
         self.load_level("simple")
 
+    def next_level(self):
+        if self.level_index_or_name == "simple":
+            self.load_level("simple")
+        elif isinstance(self.level_index_or_name, int):
+            self.load_level(self.level_index_or_name + 1)
+        else:
+            raise ValueError(f"Invalid level_index_or_name: {self.level_index_or_name}")
 
     def load_level(self, level_index_or_name):
 
@@ -49,11 +56,17 @@ class GradioApp:
             output_dir="static"
         )
 
+        # Set the animation delay.
         self.__animation_delay = 0.2
 
         # Do one step to initialize the simulation.
         self.simulation.step()
         self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
+
+        # Store the level_index_or_name.
+        self.level_index_or_name = level_index_or_name
+
+    
     
 
     # Function to build the entire interface
@@ -275,10 +288,10 @@ class GradioApp:
         for action_index, action in enumerate(actions):
             # Execute the action.
             if "action" in action:
-                self.simulation.add_action(agent_id, action)
-                self.simulation.step()
-                self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
-                yield compile_yield_values()
+                #self.simulation.add_action(agent_id, action)
+                #self.simulation.step()
+                #self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
+                yield self.perform_action(action["action"])
                 time.sleep(self.__animation_delay)
             elif "path" in action:
                 #self.simulation.step()
@@ -305,44 +318,54 @@ class GradioApp:
 
     # Function to handle the left button click
     def handle_button_left_click(self):
-        return self.handle_button_click("left")
+        return self.perform_action("left")
 
 
     # Function to handle the right button click
     def handle_button_right_click(self):
-        return self.handle_button_click("right")
+        return self.perform_action("right")
 
 
     # Function to handle the up button click
     def handle_button_up_click(self):
-        return self.handle_button_click("up")
+        return self.perform_action("up")
 
 
     # Function to handle the down button click
     def handle_button_down_click(self):
-        return self.handle_button_click("down")
+        return self.perform_action("down")
 
 
     # Function to handle the pickup button click
     def handle_button_pickup_click(self):
-        return self.handle_button_click("pickup")
+        return self.perform_action("pickup")
 
 
     # Function to handle the drop button click
     def handle_button_drop_click(self):
-        return self.handle_button_click("drop")
+        return self.perform_action("drop")
 
 
     # Function to handle the attack button click
     def handle_button_attack_click(self):
-        return self.handle_button_click("attack")
+        return self.perform_action("attack")
 
 
     # Function to handle the button click
-    def handle_button_click(self, action):
+    def perform_action(self, action):
+
+        # Perform the action.
         agent_id = self.simulation.get_agents()[0].id
         self.simulation.add_action(agent_id, {"action": action})
-        self.simulation.step()
+        events = self.simulation.step()
+
+        # Handle the events.
+        for event in events:
+            # If the event has out of bounds, then we go to the next level.
+            if event["action_failure_cause"] == "out_of_bounds":
+                self.next_level()
+
+        # Update the UI.
         self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
         plan_textbox = gr.Markdown("## Plan")
         steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")

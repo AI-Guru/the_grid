@@ -107,7 +107,6 @@ class Simulation:
 
         grid_width = self.grid.width
         grid_height = self.grid.height
-        print(grid_width, grid_height)
         
         # Add the grid cells to the renderer data.
         for x in range(grid_width):
@@ -201,11 +200,12 @@ class Simulation:
     def step(self):
 
         print(f"Simulation step: {self.simulation_step}")
-        start_time = time.time()
-        self.update()
+        #start_time = time.time()
+        events = self.update()
         self.simulation_step += 1
-        elapsed_time = time.time() - start_time
-        time_to_sleep = max(0, self.update_interval_seconds - elapsed_time)
+        return events
+        #elapsed_time = time.time() - start_time
+        #time_to_sleep = max(0, self.update_interval_seconds - elapsed_time)
         #if time_to_sleep == 0:
         #    print("Simulation is running too slow.")
         #else:
@@ -213,18 +213,27 @@ class Simulation:
 
 
     def update(self):
-        # TODO: Execute actions. Use randomness.
+
+        # These are the events that will be returned.
+        events = []
+
+        # Clone the actions and clear the actions dictionary.
         actions_to_execute = copy.deepcopy(self.actions)
         self.actions = {}
-        print(actions_to_execute)
-
 
         # Shuffle the agents to randomize the order in which they execute their actions.
         agent_ids = list(actions_to_execute.keys())
         random.shuffle(agent_ids)
         for agent_id in agent_ids:
             print(f"Agent {agent_id} is executing action {actions_to_execute[agent_id]}")
-            self.perform_agent_action(agent_id, actions_to_execute[agent_id])
+            action_failure_cause, event = self.perform_agent_action(agent_id, actions_to_execute[agent_id])
+            events.append({
+                "type": "action",
+                "agent_id": agent_id,
+                "action": actions_to_execute[agent_id]["action"],
+                "action_failure_cause": action_failure_cause,
+                "event": event,
+            })
 
         # Update the grid.
         self.grid.clear_entities()
@@ -241,6 +250,8 @@ class Simulation:
 
             #print(json.dumps(agent.observations, indent=2))
 
+        return events
+
 
     def perform_agent_action(self, agent_id, action):
         print(agent_id, action)
@@ -248,10 +259,12 @@ class Simulation:
         agent = self.agents[agent_id]
 
         if action is None:
+            raise ValueError("Action is None")
             return
 
         agent.action_count += 1
 
+        # Get the action.
         action = action["action"]
         action_to_move = {
             "up": (0, 1),
@@ -260,8 +273,11 @@ class Simulation:
             "right": (1, 0),
         }
 
-        # Handle movement actions.
+        # Initialize variables.
         action_failed_cause = None
+        event = None
+
+        # Handle movement actions.
         if action in action_to_move:
             dx, dy = action_to_move[action]
             new_x = agent.x + dx
@@ -272,7 +288,7 @@ class Simulation:
                 action_failed_cause = "out_of_bounds"
 
             # Check if the new position is empty on the grid.
-            if self.grid.get_celltype_at(new_x, new_y) not in ["empty"]:
+            elif self.grid.get_celltype_at(new_x, new_y) not in ["empty"]:
                 action_failed_cause = "cell_not_empty"
 
             # Handle failure and success.
@@ -319,10 +335,10 @@ class Simulation:
             else:
                 print(f"Agent {agent_id} cannot drop item at {agent.x}, {agent.y} because there are items there")
 
-
-
         else:
             print(f"Invalid action: {action}")
+
+        return action_failed_cause, event
 
 
     def compute_agent_observations(self, agent):

@@ -125,7 +125,6 @@ class SimulationRenderer:
 
         # Draw the doors.
         doors = get_objects(["door"])
-        print(f"Objects: {doors}")
         for entry in doors:
             x, y, sprite = entry
 
@@ -138,7 +137,6 @@ class SimulationRenderer:
             # Should not happen.
             else:
                 raise ValueError(f"Invalid door position: {x}, {y}")
-            print(f"Door sprite: {sprite}")
 
             sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite)
             render_x = x * sprite_size + offset_x
