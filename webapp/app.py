@@ -28,8 +28,17 @@ class GradioApp:
         self.demo = None
         self.tabs = None
 
+        # Load the level.
+        self.load_level("simple")
+
+
+    def load_level(self, level_index_or_name):
+
         # Create the simulation.
-        simulation_config_path = "./levels/level_test.json"
+        if isinstance(level_index_or_name, int):
+            simulation_config_path = f"./levels/level_{level_index_or_name:02d}.json"
+        elif isinstance(level_index_or_name, str):
+            simulation_config_path = f"./levels/level_{level_index_or_name}.json"
         assert os.path.exists(simulation_config_path), f"Simulation file not found: {simulation_config_path}"
         self.simulation = Simulation(simulation_config_path)  # Create an instance of the Simulation class
 
@@ -46,6 +55,7 @@ class GradioApp:
         self.simulation.step()
         self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
     
+
     # Function to build the entire interface
     def build_interface(self):
 
@@ -78,32 +88,89 @@ class GradioApp:
 
                 # A tab for the game.
                 with gr.Tab("Game", id=1):
-                    elements = self.render_game_tab()
-                    instructions_textbox = elements["instructions_textbox"]
-                    plan_textbox = elements["plan_textbox"]
-                    run_button = elements["run_button"]
-                    steps_textbox = elements["steps_textbox"]
-                    score_textbox = elements["score_textbox"]
-                    inventory_textbox = elements["inventory_textbox"]
-                    self.instructions_textbox = instructions_textbox
+                    game_tab_elements = self.render_game_tab()
+                    #instructions_textbox = elements["instructions_textbox"]
+                    #plan_textbox = elements["plan_textbox"]
+                    #run_button = elements["run_button"]
+                    #steps_textbox = elements["steps_textbox"]
+                    #score_textbox = elements["score_textbox"]
+                    #inventory_textbox = elements["inventory_textbox"]
+                    #self.instructions_textbox = instructions_textbox
 
                 # A tab for the high score.
                 with gr.Tab("High Score", id=2):
                     # Render High Score tab content
                     back_to_title_button = self.render_highscore_tab()
 
+            # Elements that will be updated.
+            outputs = [
+                game_tab_elements["plan_textbox"],
+                game_tab_elements["steps_textbox"],
+                game_tab_elements["score_textbox"],
+                game_tab_elements["inventory_textbox"],
+            ]
+
             # The run button click handler.
-            run_button.click(
+            game_tab_elements["run_button"].click(
                 self.handle_run_button_click,
-                inputs=[instructions_textbox],
-                outputs=[
-                    plan_textbox,
-                    steps_textbox,
-                    score_textbox,
-                    inventory_textbox
+                inputs=[
+                    game_tab_elements["instructions_textbox"]
                 ],
+                outputs=outputs,
                 show_progress=False
             )
+
+            # Add handlers to the buttons.
+            if "left_button" in game_tab_elements:
+                game_tab_elements["left_button"].click(
+                    self.handle_button_left_click,
+                    inputs=[],
+                    outputs=outputs,
+                    show_progress=False
+                )
+            if "right_button" in game_tab_elements:
+                game_tab_elements["right_button"].click(
+                    self.handle_button_right_click,
+                    inputs=[],
+                    outputs=outputs,
+                    show_progress=False
+                )
+            if "up_button" in game_tab_elements:
+                game_tab_elements["up_button"].click(
+                    self.handle_button_up_click,
+                    inputs=[],
+                    outputs=outputs,
+                    show_progress=False
+                )
+            if "down_button" in game_tab_elements:
+                game_tab_elements["down_button"].click(
+                    self.handle_button_down_click,
+                    inputs=[],
+                    outputs=outputs,
+                    show_progress=False
+                )
+            if "pickup_button" in game_tab_elements:
+                game_tab_elements["pickup_button"].click(
+                    self.handle_button_pickup_click,
+                    inputs=[],
+                    outputs=outputs,
+                    show_progress=False
+                )
+            if "drop_button" in game_tab_elements:
+                game_tab_elements["drop_button"].click(
+                    self.handle_button_drop_click,
+                    inputs=[],
+                    outputs=outputs,
+                    show_progress=False
+                )
+            if "attack_button" in game_tab_elements:
+                game_tab_elements["attack_button"].click(
+                    self.handle_button_attack_click,
+                    inputs=[],
+                    outputs=outputs,
+                    show_progress=False
+                )
+
 
     # General function to change tabs by index
     def change_tab(self, tab_index):
@@ -119,34 +186,40 @@ class GradioApp:
 
     # Function to render the Game tab
     def render_game_tab(self):
+
+        # Define the return data. This will be used to update the UI.
+        elements = {}
+
         # Buttons for simulation actions
         with gr.Row():
 
             # The textbox for instructions, the one for the plan, and the run button.
             with gr.Column():
                 _ = gr.Markdown("## The Grid")
-                instructions_textbox = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab. Du kanns mehrere Goldstücke aufheben. Wenn du mehrere hast, musst du sie nacheinander ablegen.", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
-                plan_textbox = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
-                run_button = gr.Button("Run")
+                elements["instructions_textbox"] = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab. Du kanns mehrere Goldstücke aufheben. Wenn du mehrere hast, musst du sie nacheinander ablegen.", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
+                elements["plan_textbox"] = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
+                elements["run_button"] = gr.Button("Run")
+
+                # A row for buttons. left right up down pickup drop.
+                with gr.Row():
+                    elements["left_button"] = gr.Button("⬅️")
+                    elements["right_button"] = gr.Button("➡️")
+                    elements["up_button"] = gr.Button("⬆️")
+                    elements["down_button"] = gr.Button("⬇️")
+                with gr.Row():
+                    elements["pickup_button"] = gr.Button("✊")
+                    elements["drop_button"] = gr.Button("🖐️")
+                    elements["attack_button"] = gr.Button("⚔️")
 
             # Custom HTML for dynamic image update.
             with gr.Column():
                 with gr.Row():
-                    steps_textbox = gr.Markdown("## Steps: 0")
-                    score_textbox = gr.Markdown("## Score: 0")
-                    inventory_textbox = gr.Markdown("## ")
-                image_html = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:rgb(36 19 26);"><img id="simulation-image-dynamic" src="" width="600px" height="600px"/></div>')
+                    elements["steps_textbox"] = gr.Markdown("## Steps: 0")
+                    elements["score_textbox"] = gr.Markdown("## Score: 0")
+                    elements["inventory_textbox"] = gr.Markdown("## ")
+                elements["image_html"] = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:rgb(36 19 26);"><img id="simulation-image-dynamic" src="" width="600px" height="600px"/></div>')
 
-        return {
-            "instructions_textbox": instructions_textbox,
-            "plan_textbox": plan_textbox,
-            "run_button": run_button,
-            "image_html": image_html,
-            "steps_textbox": steps_textbox,
-            "score_textbox": score_textbox,
-            "inventory_textbox": inventory_textbox
-        }
-    
+        return elements
 
     def __image_html_string(self):
         return f'<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image" src="{self.environment_image_base64}" width="600px" height="600px"/></div>'
@@ -184,21 +257,11 @@ class GradioApp:
                     actions_string_list.append(action.lower())
             return ", ".join(actions_string_list)
         
-        # Method to convert inventory to string.
-        def inventory_to_string(inventory):
-            inventory_items = []
-            for item in inventory:
-                if item.name == "gold":
-                    inventory_items.append("🟡")
-                else:
-                    raise ValueError(f"Unknown item: {item.name}")
-            return "".join(inventory_items)
-        
         def compile_yield_values():
             plan_textbox = actions_to_string(actions, -1)
             steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
             score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
-            inventory_string = inventory_to_string(self.simulation.get_agent_inventory(agent_id))
+            inventory_string = self.inventory_to_string(self.simulation.get_agent_inventory(agent_id))
             inventory_textbox = gr.Markdown(f"## {inventory_string}")
             return plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
@@ -228,6 +291,65 @@ class GradioApp:
                 break
             else:
                 raise ValueError(f"Invalid action: {action}")
+
+
+    def inventory_to_string(self, inventory):
+        inventory_items = []
+        for item in inventory:
+            if item.name == "gold":
+                inventory_items.append("🟡")
+            else:
+                raise ValueError(f"Unknown item: {item.name}")
+        return "".join(inventory_items)
+
+
+    # Function to handle the left button click
+    def handle_button_left_click(self):
+        return self.handle_button_click("left")
+
+
+    # Function to handle the right button click
+    def handle_button_right_click(self):
+        return self.handle_button_click("right")
+
+
+    # Function to handle the up button click
+    def handle_button_up_click(self):
+        return self.handle_button_click("up")
+
+
+    # Function to handle the down button click
+    def handle_button_down_click(self):
+        return self.handle_button_click("down")
+
+
+    # Function to handle the pickup button click
+    def handle_button_pickup_click(self):
+        return self.handle_button_click("pickup")
+
+
+    # Function to handle the drop button click
+    def handle_button_drop_click(self):
+        return self.handle_button_click("drop")
+
+
+    # Function to handle the attack button click
+    def handle_button_attack_click(self):
+        return self.handle_button_click("attack")
+
+
+    # Function to handle the button click
+    def handle_button_click(self, action):
+        agent_id = self.simulation.get_agents()[0].id
+        self.simulation.add_action(agent_id, {"action": action})
+        self.simulation.step()
+        self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
+        plan_textbox = gr.Markdown("## Plan")
+        steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
+        score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
+        inventory_textbox = gr.Markdown(f"## {self.inventory_to_string(self.simulation.get_agent_inventory(agent_id))}")
+        return plan_textbox, steps_textbox, score_textbox, inventory_textbox
+
 
     # Function to render the High Score tab
     def render_highscore_tab(self):
