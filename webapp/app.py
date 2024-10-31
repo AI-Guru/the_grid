@@ -6,11 +6,15 @@ import gradio as gr
 import uvicorn
 from fastapi import Response
 from dotenv import load_dotenv
+import logging
 import sys
 sys.path.append("..")
 from source.llmengine import LLMEngine
 from source.simulationrenderer import SimulationRenderer
 from simulation.source.simulation import Simulation
+
+# Set the logging level.
+logging.getLogger("uvicorn.access").disabled = True
 
 # Load the environment variables.
 load_dotenv(override=True)
@@ -253,4 +257,3 @@ gradio_app.change_tab(gr.State(1))
 
 # Mount Gradio app onto FastAPI
 app = gr.mount_gradio_app(fast_api_app, gradio_app.demo, path="/")
-
