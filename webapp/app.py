@@ -11,6 +11,7 @@ import sys
 sys.path.append("..")
 from source.llmengine import LLMEngine
 from source.simulationrenderer import SimulationRenderer
+from source.textdictionary import TextDictionary
 from simulation.source.simulation import Simulation
 
 # Set the logging level.
@@ -31,14 +32,22 @@ class GradioApp:
         # The chat messages.
         self.chat_messages = []
 
+        # The text dictionary.
+        self.text_dictionary = TextDictionary(language="de")
+
         # Load the level.
         self.load_level("simple")
 
 
     def add_chat_message(self, role, content):
         assert role in ["user", "assistant"], f"Invalid role: {role}"
-        self.chat_messages.append({"role": role, "content": content})
-        print(len(self.chat_messages), self.chat_messages)
+        new_message = {"role": role, "content": content}
+        # Only addd if the last message is not the same.
+        if len(self.chat_messages) == 0 or self.chat_messages[-1] != new_message:
+            self.chat_messages.append({"role": role, "content": content})
+
+    def clear_chat_messages(self):
+        self.chat_messages = []
 
 
     def next_level(self):
@@ -68,6 +77,11 @@ class GradioApp:
 
         # Set the animation delay.
         self.__animation_delay = 0.2
+
+        # Set the initial messages.
+        self.clear_chat_messages()
+        if "description" in self.simulation.config:
+            self.chat_messages = [{"role": "assistant", "content": self.simulation.config["description"]}]
 
         # Do one step to initialize the simulation.
         self.simulation.step()
@@ -100,6 +114,7 @@ class GradioApp:
         """
             
         with gr.Blocks(head=java_script) as self.demo:
+
             with gr.Tabs() as self.tabs:
                 
                 # A tab for the title.
@@ -213,9 +228,9 @@ class GradioApp:
             # The textbox for instructions, the one for the plan, and the run button.
             with gr.Column():
                 _ = gr.Markdown("## The Grid")
-
                 elements["chat_bot"] = gr.Chatbot(type="messages", show_label=False, value=self.chat_messages)
-                elements["instructions_textbox"] = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab. Du kanns mehrere Goldstücke aufheben. Wenn du mehrere hast, musst du sie nacheinander ablegen.", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
+                gr.Markdown("## Instructions")
+                elements["instructions_textbox"] = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab. Du kanns mehrere Goldstücke aufheben. Wenn du mehrere hast, musst du sie nacheinander ablegen.", lines=4, max_lines=4, label="", placeholder="Anweisungen", interactive=True)
                 elements["plan_textbox"] = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
                 elements["run_button"] = gr.Button("Run")
 
@@ -240,8 +255,8 @@ class GradioApp:
 
         return elements
 
-    def __image_html_string(self):
-        return f'<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image" src="{self.environment_image_base64}" width="600px" height="600px"/></div>'
+    #def __image_html_string(self):
+    #    return f'<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image" src="{self.environment_image_base64}" width="600px" height="600px"/></div>'
     
     # Function to handle the run button click
     def handle_run_button_click(self, instructions_textbox):
@@ -256,13 +271,6 @@ class GradioApp:
         agent_id = agent.id
         agent_observations = self.simulation.get_agent_observations(agent_id)
         
-        # Generate a plan.
-        actions = llm_engine.generate_plan(agent_observations, instructions)
-        assert isinstance(actions, list), f"Invalid actions: {actions}"
-        for action in actions:
-            assert isinstance(action, dict), f"Invalid action: {action}"
-        self.add_chat_message("assistant", "Ich habe einen Plan erstellt.")
-
         # Method to convert actions to string.
         def actions_to_string(actions, current_action_index=-1):
             actions_string_list = []
@@ -271,11 +279,17 @@ class GradioApp:
                 if "action" not in action:
                     continue
                 action = action["action"]
-                if i == current_action_index:
-                    actions_string_list.append(action.upper())  
-                else:
-                    actions_string_list.append(action.lower())
+                action = self.text_dictionary.get("action_" + action)
+                actions_string_list.append(action)
             return ", ".join(actions_string_list)
+        
+        # Generate a plan.
+        actions = llm_engine.generate_plan(agent_observations, instructions)
+        assert isinstance(actions, list), f"Invalid actions: {actions}"
+        for action in actions:
+            assert isinstance(action, dict), f"Invalid action: {action}"
+        content = self.text_dictionary.get("plan_generated").format(actions_to_string(actions))
+        self.add_chat_message("assistant", "Ich habe einen Plan erstellt. Hier ist der Plan: " + actions_to_string(actions))
         
         def compile_yield_values():
             chat_bot = self.chat_messages
@@ -289,14 +303,21 @@ class GradioApp:
         # We have a plan. Update the UI.
         yield compile_yield_values()
 
-        # TODO: Remove this.
-        #return image_html, plan_textbox, steps_textbox, score_textbox, inventory_textbox
-
         # Execute the plan. Update the UI after each step.
         for action_index, action in enumerate(actions):
             # Execute the action.
             if "action" in action:
-                yield self.perform_action(action["action"])
+                result = self.perform_action(action["action"])
+                success = result[0]
+                terminated = result[1]
+                if terminated:
+                    yield result[2:]
+                    break
+                if not success:
+                    self.add_chat_message("assistant", "Die Aktion war nicht erfolgreich. Ich stoppe hier.")
+                    yield result[2:]
+                    break
+                yield result[2:]
                 time.sleep(self.__animation_delay)
             elif "path" in action:
                 #self.simulation.step()
@@ -324,37 +345,37 @@ class GradioApp:
 
     # Function to handle the left button click
     def handle_button_left_click(self):
-        return self.perform_action("left")
+        return self.perform_action("left")[2:]
 
 
     # Function to handle the right button click
     def handle_button_right_click(self):
-        return self.perform_action("right")
+        return self.perform_action("right")[2:]
 
 
     # Function to handle the up button click
     def handle_button_up_click(self):
-        return self.perform_action("up")
+        return self.perform_action("up")[2:]
 
 
     # Function to handle the down button click
     def handle_button_down_click(self):
-        return self.perform_action("down")
+        return self.perform_action("down")[2:]
 
 
     # Function to handle the pickup button click
     def handle_button_pickup_click(self):
-        return self.perform_action("pickup")
+        return self.perform_action("pickup")[2:]
 
 
     # Function to handle the drop button click
     def handle_button_drop_click(self):
-        return self.perform_action("drop")
+        return self.perform_action("drop")[2:]
 
 
     # Function to handle the attack button click
     def handle_button_attack_click(self):
-        return self.perform_action("attack")
+        return self.perform_action("attack")[2:]
 
 
     # Function to handle the button click
@@ -365,14 +386,27 @@ class GradioApp:
         self.simulation.add_action(agent_id, {"action": action})
         events = self.simulation.step()
 
-        # Add the chat message.
-        self.add_chat_message("assistant", f"Ich habe diese Aktion ausgeführt: {action}")
-
         # Handle the events.
+        success = True
+        terminated = False
         for event in events:
             # If the event has out of bounds, then we go to the next level.
             if event["type"] == "exit":
                 self.next_level()
+                terminated = True
+                break
+
+            # If the event has a failure cause, then we show the failure cause.
+            if event["action_failure_cause"] is not None:
+                action_failure_cause = event["action_failure_cause"]
+                content = self.text_dictionary.get("action_failure_cause_" + action_failure_cause)
+                self.add_chat_message("assistant", content)
+                success = False
+                break
+
+        if success and not terminated:
+            content = self.text_dictionary.get("action_success")
+            self.add_chat_message("assistant", content)
 
         # Update the UI.
         chat_bot = self.chat_messages
@@ -381,7 +415,7 @@ class GradioApp:
         steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
         score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
         inventory_textbox = gr.Markdown(f"## {self.inventory_to_string(self.simulation.get_agent_inventory(agent_id))}")
-        return chat_bot, plan_textbox, steps_textbox, score_textbox, inventory_textbox
+        return success, terminated, chat_bot, plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
 
     # Function to render the High Score tab

@@ -322,10 +322,16 @@ class Simulation:
                 if isinstance(entity, Item) and entity.name in ["gold"]:
                     item = entity
                     break
+
+            # Success.
             if item is not None:
                 agent.inventory.append(item)
                 self.entities.remove(item)
                 print(f"Agent {agent_id} picked up item {item.name}")
+            
+            # Failure.
+            else:
+                action_failed_cause = "no_item"
 
         # Handle drop action.
         elif action == "drop":
