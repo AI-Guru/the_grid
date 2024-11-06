@@ -130,6 +130,13 @@ class LLMEngine:
                 if element in elements:
                     text += f"- There is {element} at {position_str}.\n"
 
+        # The exits.
+        for exit in observations["exits"]:
+            x = exit["x"]
+            y = exit["y"]
+            position_str = f"x={x}, y={y}"
+            text += f"- There is an exit at {position_str}.\n"
+
         # Done.
         return text
     

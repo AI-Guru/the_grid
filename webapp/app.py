@@ -28,8 +28,18 @@ class GradioApp:
         self.demo = None
         self.tabs = None
 
+        # The chat messages.
+        self.chat_messages = []
+
         # Load the level.
         self.load_level("simple")
+
+
+    def add_chat_message(self, role, content):
+        assert role in ["user", "assistant"], f"Invalid role: {role}"
+        self.chat_messages.append({"role": role, "content": content})
+        print(len(self.chat_messages), self.chat_messages)
+
 
     def next_level(self):
         if self.level_index_or_name == "simple":
@@ -66,8 +76,6 @@ class GradioApp:
         # Store the level_index_or_name.
         self.level_index_or_name = level_index_or_name
 
-    
-    
 
     # Function to build the entire interface
     def build_interface(self):
@@ -102,13 +110,6 @@ class GradioApp:
                 # A tab for the game.
                 with gr.Tab("Game", id=1):
                     game_tab_elements = self.render_game_tab()
-                    #instructions_textbox = elements["instructions_textbox"]
-                    #plan_textbox = elements["plan_textbox"]
-                    #run_button = elements["run_button"]
-                    #steps_textbox = elements["steps_textbox"]
-                    #score_textbox = elements["score_textbox"]
-                    #inventory_textbox = elements["inventory_textbox"]
-                    #self.instructions_textbox = instructions_textbox
 
                 # A tab for the high score.
                 with gr.Tab("High Score", id=2):
@@ -117,6 +118,7 @@ class GradioApp:
 
             # Elements that will be updated.
             outputs = [
+                game_tab_elements["chat_bot"],
                 game_tab_elements["plan_textbox"],
                 game_tab_elements["steps_textbox"],
                 game_tab_elements["score_textbox"],
@@ -189,6 +191,7 @@ class GradioApp:
     def change_tab(self, tab_index):
         return gr.Tabs(selected=tab_index)
 
+
     # Function to render the Title tab
     def render_title_tab(self):
         logo_path = os.path.join("assets", "logo.jpg")
@@ -196,6 +199,7 @@ class GradioApp:
         start_button = gr.Button("Start Game")
         highscore_button = gr.Button("View High Scores")
         return start_button, highscore_button
+
 
     # Function to render the Game tab
     def render_game_tab(self):
@@ -209,6 +213,8 @@ class GradioApp:
             # The textbox for instructions, the one for the plan, and the run button.
             with gr.Column():
                 _ = gr.Markdown("## The Grid")
+
+                elements["chat_bot"] = gr.Chatbot(type="messages", show_label=False, value=self.chat_messages)
                 elements["instructions_textbox"] = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab. Du kanns mehrere Goldstücke aufheben. Wenn du mehrere hast, musst du sie nacheinander ablegen.", lines=10, max_lines=10, label="", placeholder="Anweisungen", interactive=True)
                 elements["plan_textbox"] = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
                 elements["run_button"] = gr.Button("Run")
@@ -255,6 +261,7 @@ class GradioApp:
         assert isinstance(actions, list), f"Invalid actions: {actions}"
         for action in actions:
             assert isinstance(action, dict), f"Invalid action: {action}"
+        self.add_chat_message("assistant", "Ich habe einen Plan erstellt.")
 
         # Method to convert actions to string.
         def actions_to_string(actions, current_action_index=-1):
@@ -271,12 +278,13 @@ class GradioApp:
             return ", ".join(actions_string_list)
         
         def compile_yield_values():
+            chat_bot = self.chat_messages
             plan_textbox = actions_to_string(actions, -1)
             steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
             score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
             inventory_string = self.inventory_to_string(self.simulation.get_agent_inventory(agent_id))
             inventory_textbox = gr.Markdown(f"## {inventory_string}")
-            return plan_textbox, steps_textbox, score_textbox, inventory_textbox
+            return chat_bot, plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
         # We have a plan. Update the UI.
         yield compile_yield_values()
@@ -288,9 +296,6 @@ class GradioApp:
         for action_index, action in enumerate(actions):
             # Execute the action.
             if "action" in action:
-                #self.simulation.add_action(agent_id, action)
-                #self.simulation.step()
-                #self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
                 yield self.perform_action(action["action"])
                 time.sleep(self.__animation_delay)
             elif "path" in action:
@@ -300,6 +305,7 @@ class GradioApp:
                 self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
                 yield compile_yield_values()
                 time.sleep(self.__animation_delay)
+
             elif "done" in action:
                 break
             else:
@@ -359,6 +365,9 @@ class GradioApp:
         self.simulation.add_action(agent_id, {"action": action})
         events = self.simulation.step()
 
+        # Add the chat message.
+        self.add_chat_message("assistant", f"Ich habe diese Aktion ausgeführt: {action}")
+
         # Handle the events.
         for event in events:
             # If the event has out of bounds, then we go to the next level.
@@ -366,12 +375,13 @@ class GradioApp:
                 self.next_level()
 
         # Update the UI.
+        chat_bot = self.chat_messages
         self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
         plan_textbox = gr.Markdown("## Plan")
         steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
         score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
         inventory_textbox = gr.Markdown(f"## {self.inventory_to_string(self.simulation.get_agent_inventory(agent_id))}")
-        return plan_textbox, steps_textbox, score_textbox, inventory_textbox
+        return chat_bot, plan_textbox, steps_textbox, score_textbox, inventory_textbox
 
 
     # Function to render the High Score tab

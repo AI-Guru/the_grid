@@ -53,7 +53,9 @@ class SimulationRenderer:
 
         # Draw the floor.
         for cell in grid_cells:
-            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite("floor")
+            modulo_x = cell['x'] % 3
+            modulo_y = cell['y'] % 2
+            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(f"floor_{modulo_x}_{modulo_y}")
             x = cell['x'] * sprite_size + offset_x
             y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
             grid_image.paste(sprite, (x, y), sprite)

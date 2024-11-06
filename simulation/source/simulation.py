@@ -435,6 +435,16 @@ class Simulation:
             "y": agent.y,
         }
 
+        # Add the exits. 
+        observations["exits"] = []
+        for exit_position in self.exit_positions:
+            observations["exits"].append({
+                "x": exit_position[0],
+                "y": exit_position[1],
+                "x_relative": exit_position[0] - agent.x,
+                "y_relative": exit_position[1] - agent.y,
+            })
+
         # Add the step.
         observations["step"] = self.simulation_step
 
