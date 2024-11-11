@@ -23,7 +23,10 @@ load_dotenv(override=True)
 # Define the Gradio App as a class
 class GradioApp:
 
-    def __init__(self):
+    def __init__(self, development=False):
+
+        # Development mode.
+        self.development = development
 
         # Gradio blocks and tabs.
         self.demo = None
@@ -230,16 +233,17 @@ class GradioApp:
                 elements["plan_textbox"] = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
                 elements["run_button"] = gr.Button("Run")
 
-                # A row for buttons. left right up down pickup drop.
-                with gr.Row():
-                    elements["left_button"] = gr.Button("⬅️")
-                    elements["right_button"] = gr.Button("➡️")
-                    elements["up_button"] = gr.Button("⬆️")
-                    elements["down_button"] = gr.Button("⬇️")
-                with gr.Row():
-                    elements["pickup_button"] = gr.Button("✊")
-                    elements["drop_button"] = gr.Button("🖐️")
-                    elements["attack_button"] = gr.Button("⚔️")
+                # A row for buttons. left right up down pickup drop. Only in development mode.
+                if self.development:
+                    with gr.Row():
+                        elements["left_button"] = gr.Button("⬅️")
+                        elements["right_button"] = gr.Button("➡️")
+                        elements["up_button"] = gr.Button("⬆️")
+                        elements["down_button"] = gr.Button("⬇️")
+                    with gr.Row():
+                        elements["pickup_button"] = gr.Button("✊")
+                        elements["drop_button"] = gr.Button("🖐️")
+                        elements["attack_button"] = gr.Button("⚔️")
 
             # Custom HTML for dynamic image update.
             with gr.Column():
@@ -443,7 +447,7 @@ def get_simulation_image():
 fast_api_app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Initialize Gradio
-gradio_app = GradioApp()  # Create an instance of the GradioApp class
+gradio_app = GradioApp(development=True)  # Create an instance of the GradioApp class
 gradio_app.build_interface()  # Build the interface
 
 # Go to second tab.
