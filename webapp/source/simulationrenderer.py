@@ -53,20 +53,38 @@ class SimulationRenderer:
         image_height = grid_height * sprite_size
         grid_image = Image.new('RGBA', (image_width, image_height), (0, 0, 0, 0))
 
-        # Draw the floor.
-        for cell in grid_cells:
-            modulo_x = cell['x'] % 3
-            modulo_y = cell['y'] % 2
-            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(f"floor_{modulo_x}_{modulo_y}")
-            x = cell['x'] * sprite_size + offset_x
-            y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
-            grid_image.paste(sprite, (x, y), sprite)
-
         # Make a 2d wall grid.
         walls = [[False for _ in range(grid_width)] for _ in range(grid_height)]
+        floors = []
         for cell in grid_cells:
             if cell['sprite'] == "wall":
                 walls[cell['y']][cell['x']] = True
+            else:
+                floors.append((cell['x'], cell['y']))
+
+        # Draw the floor.
+        for x, y in floors:
+            shadow_string = ""
+            if x > 0 and walls[y][x - 1]:
+                shadow_string += "l"
+            if x < grid_width - 1 and walls[y][x + 1]:
+                shadow_string += "r"
+            if y < grid_height - 1 and walls[y + 1][x]:
+                shadow_string += "u"
+            if y > 0 and walls[y - 1][x]:
+                shadow_string += "d"
+
+            if shadow_string == "":
+                modulo_x = x % 3
+                modulo_y = y % 2
+                shadow_string = f"{modulo_x}_{modulo_y}"
+            elif shadow_string == "d":
+                modulo_x = x % 2
+                shadow_string = f"d_{modulo_x}"
+
+            sprite_name = "floor_" + shadow_string
+            sprite, _, _ = self.__sprite_pool.get_sprite(sprite_name)
+            grid_image.paste(sprite, (x * sprite_size, (grid_height - y - 1) * sprite_size), sprite)
 
         offsets = [
             (-1, 1),
