@@ -34,8 +34,10 @@ class SimulationRenderer:
         else:
             raise ValueError(f"Unknown sprite: {sprite_name}")
 
+
     def set_path(self, path):
         self.__path = path
+
 
     def render(self, render_data, return_base64=False):
 
@@ -186,10 +188,6 @@ class SimulationRenderer:
             for cell in grid_cells:
                 if cell['sprite'] == sprite_name:
                     cells_with_sprites.append(cell)
-                    #sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite_name)
-                    #x = cell['x'] * sprite_size + offset_x
-                    #y = (grid_height - cell['y'] - 1) * sprite_size + offset_y
-                    #grid_image.paste(sprite, (x, y), sprite)
         for cell in cells_with_sprites:
             # Is there another sprite on the same cell?
             there_is_another_sprite = False
@@ -205,7 +203,10 @@ class SimulationRenderer:
             else:
                 additional_offset_x = 0
                 additional_offset_y = 0
-            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(cell['sprite'])
+            
+            # Render the sprite.
+            sprite_name = cell['sprite'] + "_" + cell['state']
+            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite_name)
             x = cell['x'] * sprite_size + offset_x + additional_offset_x
             y = (grid_height - cell['y'] - 1) * sprite_size + offset_y + additional_offset_y
             grid_image.paste(sprite, (x, y), sprite)

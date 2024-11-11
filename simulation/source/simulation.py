@@ -129,6 +129,7 @@ class Simulation:
                 "x": entity.x,
                 "y": entity.y,
                 "sprite": entity.name,
+                "state": entity.state,
             })
 
         # Add the agents to the renderer data.
@@ -137,6 +138,7 @@ class Simulation:
                 "x": agent.x,
                 "y": agent.y,
                 "sprite": agent.name,
+                "state": agent.state,
             })
 
         # Add the agent data.

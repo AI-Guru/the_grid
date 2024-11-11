@@ -4,3 +4,4 @@ class Entity:
         self.name = name
         self.x = x
         self.y = y
+        self.state = "normal"
