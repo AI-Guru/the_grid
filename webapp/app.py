@@ -50,13 +50,9 @@ class GradioApp:
         self.chat_messages = []
 
 
-    def next_level(self):
-        if self.level_index_or_name == "simple":
-            self.load_level("simple")
-        elif isinstance(self.level_index_or_name, int):
-            self.load_level(self.level_index_or_name + 1)
-        else:
-            raise ValueError(f"Invalid level_index_or_name: {self.level_index_or_name}")
+    def next_level(self, next_level):
+        self.load_level(next_level)
+
 
     def load_level(self, level_index_or_name):
 
@@ -392,7 +388,8 @@ class GradioApp:
         for event in events:
             # If the event has out of bounds, then we go to the next level.
             if event["type"] == "exit":
-                self.next_level()
+                next_level = event["next_level"]
+                self.next_level(next_level)
                 terminated = True
                 break
 

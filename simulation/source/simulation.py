@@ -432,11 +432,14 @@ class Simulation:
 
         events = []
         for agent in self.agents.values():
-            if [agent.x, agent.y] in self.exit_positions:
-                events.append({
-                    "type": "exit",
-                    "agent_id": agent.id,
-                })
+            for next_level, positions in self.exit_positions.items():
+                if [agent.x, agent.y] in positions:
+                    events.append({
+                        "type": "exit",
+                        "agent_id": agent.id,
+                        "next_level": next_level,
+                    })
+                    break
         return events
 
 
@@ -454,13 +457,14 @@ class Simulation:
 
         # Add the exits. 
         observations["exits"] = []
-        for exit_position in self.exit_positions:
-            observations["exits"].append({
-                "x": exit_position[0],
-                "y": exit_position[1],
-                "x_relative": exit_position[0] - agent.x,
-                "y_relative": exit_position[1] - agent.y,
-            })
+        for _, exit_positions in self.exit_positions.items():
+            for exit_position in exit_positions:
+                observations["exits"].append({
+                    "x": exit_position[0],
+                    "y": exit_position[1],
+                    "x_relative": exit_position[0] - agent.x,
+                    "y_relative": exit_position[1] - agent.y,
+                })
 
         # Add the step.
         observations["step"] = self.simulation_step

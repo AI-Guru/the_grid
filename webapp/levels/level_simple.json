@@ -10,7 +10,9 @@
             "X X X X X X"
             ]
     },
-    "exits": [[2,5], [3,5]],
+    "exits": {
+        "simple": [[2,5], [3,5]]
+    },  
     "triggers": [
         {
             "type": "remove:door",
