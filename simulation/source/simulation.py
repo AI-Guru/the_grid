@@ -108,6 +108,7 @@ class Simulation:
         else:
             raise ValueError("Invalid version")
 
+
     def get_renderer_data_v1(self):
         grid_cells = []
 
@@ -246,6 +247,9 @@ class Simulation:
         # Handle the triggers.
         events += self.handle_triggers()
 
+        # Handle entity interactions.
+        events += self.handle_entity_interactions()
+
         # Handle the exit positions.
         events += self.handle_exits()
 
@@ -270,6 +274,9 @@ class Simulation:
         if action is None:
             raise ValueError("Action is None")
             return
+
+        if agent.state == "dead":
+            return "agent_dead", None
 
         agent.action_count += 1
 
@@ -428,6 +435,27 @@ class Simulation:
 
         # Return the events.
         return events
+    
+
+    def handle_entity_interactions(self):
+
+        # If an agent is on the same cell as an enemy, the agent is killed.
+        events = []
+
+        for agent in self.agents.values():
+            if agent.state == "normal":
+                entities = self.grid.get_entities_at(agent.x, agent.y)
+                for entity in entities:
+                    if entity.name == "enemy":
+                        events.append({
+                            "type": "agent_killed",
+                            "agent_id": agent.id,
+                            "messages": "player_killed_by_enemy",
+                        })
+                        agent.state = "dead"
+
+        return events
+
     
 
     def handle_exits(self):

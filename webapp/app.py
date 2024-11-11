@@ -386,6 +386,12 @@ class GradioApp:
         self.simulation.add_action(agent_id, {"action": action})
         events = self.simulation.step()
 
+        def messages_to_string(messages):
+            messages = messages.split(",")
+            messages = [message.strip() for message in messages]
+            messages = [self.text_dictionary.get(message) for message in messages]
+            return ", ".join(messages)
+
         # Handle the events.
         success = True
         terminated = False
@@ -399,23 +405,24 @@ class GradioApp:
 
             # If the event is a message, then we show the message.
             if event["type"] == "messages":
-                messages = event["messages"].split(",")
-                messages = [message.strip() for message in messages]
-                messages = [self.text_dictionary.get(message) for message in messages]
-                message_string = ", ".join(messages)
+                message_string = messages_to_string(event["messages"])
+                self.add_chat_message("assistant", message_string)
+            
+            elif event["type"] == "agent_killed":
+                message_string = messages_to_string(event["messages"])
                 self.add_chat_message("assistant", message_string)
 
             # If the event has a failure cause, then we show the failure cause.
-            if "action_failure_cause" in event and event["action_failure_cause"] is not None:
+            elif event["type"] == "action" and event["action_failure_cause"] is not None:
                 action_failure_cause = event["action_failure_cause"]
                 content = self.text_dictionary.get("action_failure_cause_" + action_failure_cause)
                 self.add_chat_message("assistant", content)
                 success = False
                 break
 
-        if success and not terminated:
-            content = self.text_dictionary.get("action_success")
-            self.add_chat_message("assistant", content)
+        #if success and not terminated:
+            #content = self.text_dictionary.get("action_success")
+            #self.add_chat_message("assistant", content)
 
         # Update the UI.
         chat_bot = self.chat_messages

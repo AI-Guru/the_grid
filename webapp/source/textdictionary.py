@@ -13,6 +13,9 @@ texts = {
     "action_failure_cause_entity_blocking": {
         "de": "Der Weg ist blockiert!"
     },
+    "action_failure_cause_agent_dead": {
+        "de": "Du bist tot!"
+    },
     "plan_generated": {
         "de": "Ich habe einen Plan: {}"
     },
@@ -44,6 +47,10 @@ texts = {
     
     "doors_open": {
         "de": "Alle Türen sind geöffnet!"
+    },
+
+    "player_killed_by_enemy": {
+        "de": "Du wurdest von einem Gegner getötet!"
     },
 }
 
