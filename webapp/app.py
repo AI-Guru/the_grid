@@ -20,6 +20,8 @@ logging.getLogger("uvicorn.access").disabled = True
 # Load the environment variables.
 load_dotenv(override=True)
 
+start_level = "simple"
+
 # Define the Gradio App as a class
 class GradioApp:
 
@@ -39,7 +41,7 @@ class GradioApp:
         self.text_dictionary = TextDictionary(language="de")
 
         # Load the level.
-        self.load_level("simple")
+        self.load_level(start_level)
 
 
     def add_chat_message(self, role, content):
@@ -49,6 +51,7 @@ class GradioApp:
         if len(self.chat_messages) == 0 or self.chat_messages[-1] != new_message:
             self.chat_messages.append({"role": role, "content": content})
 
+
     def clear_chat_messages(self):
         self.chat_messages = []
 
@@ -57,7 +60,11 @@ class GradioApp:
         self.load_level(next_level)
 
 
-    def load_level(self, level_index_or_name):
+    def load_level(self, level_index_or_name=None):
+
+        # Fall back to the first level.
+        if level_index_or_name is None:
+            level_index_or_name = start_level
 
         # Create the simulation.
         if isinstance(level_index_or_name, int):
@@ -148,6 +155,16 @@ class GradioApp:
                 outputs=outputs,
                 show_progress=False
             )
+            
+            # The restart button click handler.
+            if "restart_button" in game_tab_elements:
+                game_tab_elements["restart_button"].click(
+                    self.load_level,
+                    inputs=[],
+                    outputs=[],
+                    show_progress=False
+                )
+                self.load_level(start_level)
 
             # Add handlers to the buttons.
             if "left_button" in game_tab_elements:
@@ -252,6 +269,9 @@ class GradioApp:
                     elements["score_textbox"] = gr.Markdown("## Score: 0")
                     elements["inventory_textbox"] = gr.Markdown("## ")
                 elements["image_html"] = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:rgb(36 19 26);"><img id="simulation-image-dynamic" src="" width="600px" height="600px"/></div>')
+
+                with gr.Row():
+                    elements["restart_button"] = gr.Button("Restart")
 
         return elements
 

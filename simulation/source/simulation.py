@@ -59,6 +59,10 @@ class Simulation:
                     entities_positions += [("enemy", x, y)]
                 elif cell == "D":
                     entities_positions += [("door", x, y)]
+                elif cell == "S":
+                    entities_positions += [("staircase", x, y)]
+                elif cell == "K":
+                    entities_positions += [("key", x, y)]
                 elif cell in [".", "X"]:
                     pass
                 else:

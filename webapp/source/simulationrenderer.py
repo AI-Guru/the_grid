@@ -86,18 +86,18 @@ class SimulationRenderer:
             sprite, _, _ = self.__sprite_pool.get_sprite(sprite_name)
             grid_image.paste(sprite, (x * sprite_size, (grid_height - y - 1) * sprite_size), sprite)
 
-        offsets = [
-            (-1, 1),
-            (0, 1),
-            (1, 1),
-            (1, 0),
-            (1, -1),
-            (0, -1),
-            (-1, -1),
-            (-1, 0),
-        ]
-
+        # Determine the wall type based on the surrounding walls.
         def determine_wall_type(walls, x, y):
+            offsets = [
+                (-1, 1),
+                (0, 1),
+                (1, 1),
+                (1, 0),
+                (1, -1),
+                (0, -1),
+                (-1, -1),
+                (-1, 0),
+            ]
             wall_type = ""
             for offset_x, offset_y in offsets:
                 new_x = x + offset_x
@@ -145,6 +145,16 @@ class SimulationRenderer:
                 assert isinstance(object[1], int), f"Invalid object: {object}"
             return objects
 
+        # Render things on the floor.
+        staircases = get_objects(["staircase"])
+        for entry in staircases:
+            x, y, sprite = entry
+            sprite, offset_x, offset_y = self.__sprite_pool.get_sprite(sprite)
+            render_x = x * sprite_size + offset_x
+            render_y = (grid_height - y - 1) * sprite_size + offset_y
+            grid_image.paste(sprite, (render_x, render_y), sprite)
+            print(f"Staircase at {x}, {y}")
+
         # Draw the doors.
         doors = get_objects(["door"])
         for entry in doors:
@@ -166,7 +176,7 @@ class SimulationRenderer:
             grid_image.paste(sprite, (render_x, render_y), sprite)
 
         # Draw the sprites.
-        sprite_order = ["gold", "trove"]
+        sprite_order = ["gold", "trove", "key"]
         for sprite_name in sprite_order:
             for cell in grid_cells:
                 if cell['sprite'] == sprite_name:
