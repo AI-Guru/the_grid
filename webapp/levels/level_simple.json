@@ -16,7 +16,8 @@
             "type": "remove:door",
             "frequency": "once",
             "positions": [[2,5], [3,5]],
-            "when": "no:gold"
+            "when": "no:gold",
+            "messages": "all_gold_collected, doors_open"
         }
     ],
     "update_interval_seconds": 1.0,

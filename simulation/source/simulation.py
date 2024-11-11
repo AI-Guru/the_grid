@@ -364,6 +364,9 @@ class Simulation:
 
     def handle_triggers(self):
 
+        # These are the events that will be returned.
+        events = []
+
         # Go through all the triggers.
         new_triggers = []
         for trigger in self.triggers:
@@ -388,6 +391,13 @@ class Simulation:
             else:
                 new_triggers.append(trigger)
                 continue
+
+            # Handle the trigger message.
+            if "messages" in trigger:
+                events.append({
+                    "type": "messages",
+                    "messages": trigger["messages"],
+                })
 
             # Handle the trigger.
             if trigger_type.startswith("remove:"):
@@ -415,7 +425,8 @@ class Simulation:
         self.triggers = new_triggers
 
         # Return the events.
-        return []
+        return events
+    
 
     def handle_exits(self):
 

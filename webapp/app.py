@@ -396,8 +396,16 @@ class GradioApp:
                 terminated = True
                 break
 
+            # If the event is a message, then we show the message.
+            if event["type"] == "messages":
+                messages = event["messages"].split(",")
+                messages = [message.strip() for message in messages]
+                messages = [self.text_dictionary.get(message) for message in messages]
+                message_string = ", ".join(messages)
+                self.add_chat_message("assistant", message_string)
+
             # If the event has a failure cause, then we show the failure cause.
-            if event["action_failure_cause"] is not None:
+            if "action_failure_cause" in event and event["action_failure_cause"] is not None:
                 action_failure_cause = event["action_failure_cause"]
                 content = self.text_dictionary.get("action_failure_cause_" + action_failure_cause)
                 self.add_chat_message("assistant", content)

@@ -35,6 +35,16 @@ texts = {
     "action_drop": {
         "de": "Ablegen"
     },
+
+    # Storytelling.
+
+    "all_gold_collected": {
+        "de": "Du hast alle Goldstücke eingesammelt!"
+    },
+    
+    "doors_open": {
+        "de": "Alle Türen sind geöffnet!"
+    },
 }
 
 class TextDictionary:
