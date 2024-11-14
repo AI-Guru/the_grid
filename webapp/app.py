@@ -247,7 +247,7 @@ class GradioApp:
                 elements["chat_bot"] = gr.Chatbot(type="messages", show_label=False, value=self.chat_messages)
                 gr.Markdown("## Instructions")
                 elements["instructions_textbox"] = gr.Textbox("Gehe zum Gold. Hebe es auf. Dann gehe zur Truhe. Lege das Gold dort ab. Du kanns mehrere Goldstücke aufheben. Wenn du mehrere hast, musst du sie nacheinander ablegen.", lines=4, max_lines=4, label="", placeholder="Anweisungen", interactive=True)
-                elements["plan_textbox"] = gr.Textbox("", lines=10, max_lines=10, label="", placeholder="Plan", interactive=False)
+                elements["plan_textbox"] = gr.Textbox("", lines=2, max_lines=2, label="", placeholder="Plan", interactive=False)
                 elements["run_button"] = gr.Button("Run")
 
                 # A row for buttons. left right up down pickup drop. Only in development mode.
@@ -303,17 +303,19 @@ class GradioApp:
                 actions_string_list.append(action)
             return ", ".join(actions_string_list)
         
-        # Generate a plan.
-        actions = llm_engine.generate_plan(agent_observations, instructions)
-        assert isinstance(actions, list), f"Invalid actions: {actions}"
-        for action in actions:
-            assert isinstance(action, dict), f"Invalid action: {action}"
-        content = self.text_dictionary.get("plan_generated").format(actions_to_string(actions))
-        self.add_chat_message("assistant", "Ich habe einen Plan erstellt. Hier ist der Plan: " + actions_to_string(actions))
+        # Generate a response.
+        actions = llm_engine.generate_response(agent_observations, instructions)
+
+        # Handle the actions before executing them.
+        #assert isinstance(actions, list), f"Invalid actions: {actions}"
+        #for action in actions:
+        #    assert isinstance(action, dict), f"Invalid action: {action}"
+        #content = self.text_dictionary.get("plan_generated").format(actions_to_string(actions))
+        #self.add_chat_message("assistant", "Ich habe einen Plan erstellt. Hier ist der Plan: " + actions_to_string(actions))
         
         def compile_yield_values():
             chat_bot = self.chat_messages
-            plan_textbox = actions_to_string(actions, -1)
+            plan_textbox = "" #actions_to_string(actions, -1)
             steps_textbox = gr.Markdown(f"## Steps: {self.simulation.get_step()}")
             score_textbox = gr.Markdown(f"## Score: {self.simulation.get_agent_score(agent_id)}")
             inventory_string = self.inventory_to_string(self.simulation.get_agent_inventory(agent_id))
@@ -339,13 +341,20 @@ class GradioApp:
                     break
                 yield result[2:]
                 time.sleep(self.__animation_delay)
+            
+            # Visualize the path.
             elif "path" in action:
-                #self.simulation.step()
                 path = action["path"]
                 self.simulation_renderer.set_path(path)
                 self.environment_image_base64 = self.simulation_renderer.render(self.simulation.get_renderer_data(), return_base64=True)
                 yield compile_yield_values()
                 time.sleep(self.__animation_delay)
+
+            # Visualize the answer.
+            elif "answer" in action:
+                answer = action["answer"]
+                self.add_chat_message("assistant", answer)
+                yield compile_yield_values()
 
             elif "done" in action:
                 break
@@ -428,6 +437,7 @@ class GradioApp:
                 message_string = messages_to_string(event["messages"])
                 self.add_chat_message("assistant", message_string)
             
+            # Handle the agent killed event.
             elif event["type"] == "agent_killed":
                 message_string = messages_to_string(event["messages"])
                 self.add_chat_message("assistant", message_string)

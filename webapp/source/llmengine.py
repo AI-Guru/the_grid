@@ -43,8 +43,17 @@ class GotoAction(BaseAction):
 
 class Plan(BaseModel):
     actions: List[Union[GotoAction, ManipulateAction]] = Field(
-        ..., title="Actions", description="The list of actions."
+        ..., title="Actions", description="The list of actions. If the user wants actions to be performed."
     )
+
+class Answer(BaseModel):
+    answer: str = Field(
+        ..., title="Answer", description="The answer to the question."
+    )
+
+class Response(BaseModel):
+    response: Union[Plan, Answer] = Field(..., title="Response", description="The response to the user. Either a plan or an answer.")
+
 
 prompt_template_paths = {
     "system": "prompts/system.txt",
@@ -60,7 +69,7 @@ class LLMEngine:
         self.temperature = temperature
 
 
-    def generate_plan(self, agent_observations, user_instructions):
+    def generate_response(self, agent_observations, user_instructions):
 
         # Load the system prompt template.
         system_prompt_template = PromptTemplate.from_file(prompt_template_paths["system"])
@@ -73,28 +82,39 @@ class LLMEngine:
             user_instructions=user_instructions
         )
 
+        # Remove all the lines that start with a hash.
+        work_prompt = "\n".join([line for line in work_prompt.split("\n") if not line.strip().startswith("#")])
+
         # Parse the instructions.
-        pydantic_parser = PydanticOutputParser(pydantic_object=Plan)
+        pydantic_parser = PydanticOutputParser(pydantic_object=Response)
         
+        # Create the format instructions.
         format_instructions = pydantic_parser.get_format_instructions()
         work_prompt += "\n\n" + format_instructions
 
+        # Compile the list of messages.
         messages = [
             ("system", system_prompt),
             ("user", work_prompt),
         ]
 
         # Get the model and invoke it.
+        print(f"Using LLM provider {self.llm_provider} and model {self.llm_name}.")
         llm = self.__get_model(self.llm_provider, self.llm_name, temperature=self.temperature)
         response = llm.invoke(messages)
         messages += [("assistant", response)]
         self.__log_messages(messages)
-        plan = pydantic_parser.invoke(response)
-        for action in plan.actions:
-            assert isinstance(action, GotoAction) or isinstance(action, ManipulateAction)
+        response = pydantic_parser.invoke(response)
+        assert isinstance(response, Response) or isinstance(response, Plan)
+        #for action in plan.actions:
+        #    assert isinstance(action, GotoAction) or isinstance(action, ManipulateAction)
+        print(response.model_dump_json(indent=2))
   
         # Return the actions.
-        actions = self.__plan_to_actions(plan, agent_observations)
+        if isinstance(response.response, Answer):
+            return [self.__answer_to_action(response.response, agent_observations)]
+        elif isinstance(response.response, Plan):
+            actions = self.__plan_to_actions(response.response, agent_observations)
         return actions
 
 
@@ -120,7 +140,7 @@ class LLMEngine:
                 text += f"- You are standing on nothing.\n"
 
         # The elements that the agent sees.
-        elements_to_represent = ["gold", "trove"]
+        elements_to_represent = ["gold", "trove", "enemy"]
         for element in elements_to_represent:
             for cell in observations["cells"]:
                 x = cell["x"]
@@ -140,6 +160,10 @@ class LLMEngine:
         # Done.
         return text
     
+
+    def __answer_to_action(self, response, agent_observations):
+        return {"answer": response.answer}
+
 
     def __plan_to_actions(self, plan, agent_observations):
         
