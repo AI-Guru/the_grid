@@ -118,7 +118,7 @@ class GradioApp:
                         image.src = data;
                     });
 
-                }, 1000);
+                }, 100);
             </script>
         """
             
@@ -153,7 +153,8 @@ class GradioApp:
             game_tab_elements["run_button"].click(
                 self.handle_run_button_click,
                 inputs=[
-                    game_tab_elements["instructions_textbox"]
+                    game_tab_elements["instructions_textbox"],
+                    game_tab_elements["language_radiobutton"]
                 ],
                 outputs=outputs,
                 show_progress=False
@@ -253,6 +254,10 @@ class GradioApp:
                 elements["plan_textbox"] = gr.Textbox("", lines=2, max_lines=2, label="", placeholder="Plan", interactive=False)
                 elements["run_button"] = gr.Button("Run")
 
+                # Language selection.
+                with gr.Row():
+                    elements["language_radiobutton"] = gr.Radio(["Deutsch", "English"], label="", value="Deutsch")
+
                 # A row for buttons. left right up down pickup drop. Only in development mode.
                 if self.development:
                     with gr.Row():
@@ -271,22 +276,21 @@ class GradioApp:
                     elements["steps_textbox"] = gr.Markdown("## Steps: 0")
                     elements["score_textbox"] = gr.Markdown("## Score: 0")
                     elements["inventory_textbox"] = gr.Markdown("## ")
-                elements["image_html"] = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:rgb(36 19 26);"><img id="simulation-image-dynamic" src="" width="600px" height="600px"/></div>')
+                elements["image_html"] = gr.HTML('<div id="image-container" style="width:600px;height:600px;background-color:rgb(36 19 26);overflow:hidden;"><img id="simulation-image-dynamic" src="" style="width:100%; height:100%; object-fit:contain; overflow:hidden;"/></div>')
 
                 with gr.Row():
                     elements["restart_button"] = gr.Button("Restart")
 
         return elements
 
-    #def __image_html_string(self):
-    #    return f'<div id="image-container" style="width:600px;height:600px;background-color:green;"><img id="simulation-image" src="{self.environment_image_base64}" width="600px" height="600px"/></div>'
     
     # Function to handle the run button click
-    def handle_run_button_click(self, instructions_textbox):
+    def handle_run_button_click(self, instructions_textbox, language_radiobutton):
         instructions = instructions_textbox
+        language = language_radiobutton
 
         # Get the LLM engine.
-        llm_engine = LLMEngine("openai", "gpt-4o", temperature=0.5)
+        llm_engine = LLMEngine("openai", "gpt-4o", temperature=0.5, language=language)
 
         # Get the agent.
         agents = self.simulation.get_agents()
@@ -308,14 +312,17 @@ class GradioApp:
         
         # Generate a response.
         actions = llm_engine.generate_response(agent_observations, instructions)
+        #assert isinstance(actions, list), f"Invalid actions: {actions}"
 
         # Handle the actions before executing them.
-        #assert isinstance(actions, list), f"Invalid actions: {actions}"
-        #for action in actions:
-        #    assert isinstance(action, dict), f"Invalid action: {action}"
-        #content = self.text_dictionary.get("plan_generated").format(actions_to_string(actions))
-        #self.add_chat_message("assistant", "Ich habe einen Plan erstellt. Hier ist der Plan: " + actions_to_string(actions))
-        
+        if "answer" in actions[0]:
+            pass
+        else:
+            for action in actions:
+                assert isinstance(action, dict), f"Invalid action: {action}"
+            content = self.text_dictionary.get("plan_generated").format(actions_to_string(actions))
+            self.add_chat_message("assistant", "Ich habe einen Plan erstellt. Hier ist der Plan: " + actions_to_string(actions))
+            
         def compile_yield_values():
             chat_bot = self.chat_messages
             plan_textbox = "" #actions_to_string(actions, -1)

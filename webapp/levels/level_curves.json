@@ -27,5 +27,5 @@
     "observation": {
         "mode": "all"
     },
-    "description": "Collect all the gold and reach the exit."
+    "description": "Find your way out."
 }

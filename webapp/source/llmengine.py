@@ -63,17 +63,18 @@ prompt_template_paths = {
 
 class LLMEngine:
 
-    def __init__(self, llm_provider: str, llm_name: str, temperature: float):
+    def __init__(self, llm_provider: str, llm_name: str, temperature: float, language: str = "en"):
         self.llm_provider = llm_provider
         self.llm_name = llm_name
         self.temperature = temperature
+        self.language = language
 
 
     def generate_response(self, agent_observations, user_instructions):
 
         # Load the system prompt template.
         system_prompt_template = PromptTemplate.from_file(prompt_template_paths["system"])
-        system_prompt = system_prompt_template.format()
+        system_prompt = system_prompt_template.format(language=self.language)
 
         # Load the work prompt template.
         work_prompt_template = PromptTemplate.from_file(prompt_template_paths["plan"])
@@ -287,6 +288,15 @@ class LLMEngine:
 
 
 def find_route(start_x, start_y, end_x, end_y, obstacle_positions):
+
+
+    # Trivial case: start and end are right next to each other.
+    if (start_x, start_y) == (end_x, end_y):
+        return [(start_x, start_y)], 1
+    if (start_x, start_y) in obstacle_positions or (end_x, end_y) in obstacle_positions:
+        return None, 0
+    if abs(start_x - end_x) + abs(start_y - end_y) == 1:
+        return [(start_x, start_y), (end_x, end_y)], 2
 
     class Node:
         def __init__(self, x, y, parent=None):
