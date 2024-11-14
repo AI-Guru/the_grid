@@ -40,6 +40,12 @@ class GradioApp:
         # The text dictionary.
         self.text_dictionary = TextDictionary(language="de")
 
+        # Set the animation delay.
+        if development:
+            self.__animation_delay = 0.2
+        else:
+            self.__animation_delay = 1.0
+
         # Load the level.
         self.load_level(start_level)
 
@@ -80,9 +86,6 @@ class GradioApp:
             sprite_sheet_path=sprite_sheet_path,
             output_dir="static"
         )
-
-        # Set the animation delay.
-        self.__animation_delay = 0.2
 
         # Set the initial messages.
         self.clear_chat_messages()

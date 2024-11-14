@@ -48,11 +48,11 @@ class Plan(BaseModel):
 
 class Answer(BaseModel):
     answer: str = Field(
-        ..., title="Answer", description="The answer to the question."
+        ..., title="Answer", description="The answer to the question. Coordinates are ommited. Instead the answer would include relative positions like 'left', 'right', 'up', 'down'."
     )
 
 class Response(BaseModel):
-    response: Union[Plan, Answer] = Field(..., title="Response", description="The response to the user. Either a plan or an answer.")
+    response: Union[Plan, Answer] = Field(..., title="Response", description="The response to the user. Either a plan or an answer. It is always an answer when the query is a question.")
 
 
 prompt_template_paths = {

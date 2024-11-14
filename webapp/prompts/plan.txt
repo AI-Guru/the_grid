@@ -16,8 +16,8 @@ Here are the user instructions:
 #- Only reply with a plan.
 #- Keep in mind that the plan will be executed sequentially.
 #- Have the right order of actions.
-#- Coordinates are in the form `(x, y)`.
-#- Decreasing y by 1 is moving up.
-#- Increasing y by 1 is moving down.
-#- Decreasing x by 1 is moving left.
-#- Increasing x by 1 is moving right.
+- Coordinates are in the form `(x, y)`.
+- Decreasing y by 1 is moving up.
+- Increasing y by 1 is moving down.
+- Decreasing x by 1 is moving left.
+- Increasing x by 1 is moving right.
