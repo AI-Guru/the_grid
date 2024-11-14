@@ -1,0 +1,31 @@
+{
+    "grid": {
+        "type": "custom",
+        "layout": [
+            "X X X X X X X X",
+            "X 1 . . . . . X",
+            "X X X X X X . X",
+            "X X X X X X . X",
+            "X . . . . . . X",
+            "X . X X X X X X",
+            "X . X X X X X X",
+            "X . . . . . S X",
+            "X X X X X X X X"
+            ]
+    },
+    "exits": {
+        "simple": [[6,1]]
+    },  
+    "triggers": [],
+    "update_interval_seconds": 1.0,
+    "agents": [
+        {
+            "identifier": "agent1",
+            "name": "red"
+        }
+    ],
+    "observation": {
+        "mode": "all"
+    },
+    "description": "Collect all the gold and reach the exit."
+}

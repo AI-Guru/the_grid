@@ -48,7 +48,7 @@ class Plan(BaseModel):
 
 class Answer(BaseModel):
     answer: str = Field(
-        ..., title="Answer", description="The answer to the question. Coordinates are ommited. Instead the answer would include relative positions like 'left', 'right', 'up', 'down'."
+        ..., title="Answer", description="The answer to the question. Coordinates are ommited. Instead the answer would include relative positions like 'left', 'right', 'up', 'down'. 0, 0 is the lower left corner of the grid."
     )
 
 class Response(BaseModel):

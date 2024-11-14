@@ -20,7 +20,7 @@ logging.getLogger("uvicorn.access").disabled = True
 # Load the environment variables.
 load_dotenv(override=True)
 
-start_level = "corridor"
+start_level = "curves"
 
 # Define the Gradio App as a class
 class GradioApp:
