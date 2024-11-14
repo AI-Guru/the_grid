@@ -74,6 +74,11 @@ class SimulationRenderer:
             if y > 0 and walls[y - 1][x]:
                 shadow_string += "d"
 
+            if "u" in shadow_string and "d" in shadow_string:
+                shadow_string = shadow_string.replace("d", "")
+            if "l" in shadow_string and "r" in shadow_string:
+                shadow_string = shadow_string.replace("r", "")
+                
             if shadow_string == "":
                 modulo_x = x % 3
                 modulo_y = y % 2
@@ -81,6 +86,10 @@ class SimulationRenderer:
             elif shadow_string == "d":
                 modulo_x = x % 2
                 shadow_string = f"d_{modulo_x}"
+
+
+                 
+            print(f"Shadow string: {shadow_string} at {x}, {y}")
 
             sprite_name = "floor_" + shadow_string
             sprite, _, _ = self.__sprite_pool.get_sprite(sprite_name)
